@@ -1,9 +1,9 @@
-syntax = "proto2";
+syntax = "proto3";
 
 message Request {
-  required string level = 1;
-  required string title = 2;
-  required string message = 3;
+  string type = 1;
+  string title = 2;
+  string message = 3;
   repeated string trace = 4;
   map<string, string> tags = 5;
 }
