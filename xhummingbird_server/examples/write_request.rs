@@ -4,6 +4,9 @@ use protobuf::RepeatedField;
 use std::collections::HashMap;
 use std::fs::File;
 use std::io::prelude::*;
+use protobuf::well_known_types::Timestamp;
+use std::time::SystemTime;
+use std::convert::TryFrom;
 
 fn main(){
     println!("write_request started.");
@@ -25,6 +28,10 @@ fn main(){
     let mut tags = HashMap::new();
     tags.insert("key".to_string(), "value".to_string());
     request.set_tags(tags);
+
+    let mut timestamp = Timestamp::new();
+    timestamp.set_seconds(TryFrom::try_from(SystemTime::now().elapsed().unwrap().as_secs()).unwrap());
+    request.set_timestamp(timestamp);
 
     println!("{:?}", request);
 

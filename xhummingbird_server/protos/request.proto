@@ -1,9 +1,12 @@
 syntax = "proto3";
 
+import "google/protobuf/timestamp.proto";
+
 message Request {
   uint32 level = 1;
   string title = 2;
   string message = 3;
   repeated string trace = 4;
   map<string, string> tags = 5;
+  google.protobuf.Timestamp timestamp = 6;
 }

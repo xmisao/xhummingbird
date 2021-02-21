@@ -1,9 +1,11 @@
 use xhummingbird_server::protos::request::Request;
 use protobuf::Message;
 use protobuf::RepeatedField;
+use protobuf::well_known_types::Timestamp;
 use std::collections::HashMap;
 use std::thread;
-use std::time::Duration;
+use std::time::{Duration, SystemTime};
+use std::convert::TryFrom;
 
 fn main(){
     println!("send_request started.");
@@ -43,6 +45,10 @@ fn build_sample_request(n: u32) -> Request {
     let mut tags = HashMap::new();
     tags.insert("key".to_string(), "value".to_string());
     request.set_tags(tags);
+
+    let mut timestamp = Timestamp::new();
+    timestamp.set_seconds(TryFrom::try_from(SystemTime::now().elapsed().unwrap().as_secs()).unwrap());
+    request.set_timestamp(timestamp);
 
     request
 }
