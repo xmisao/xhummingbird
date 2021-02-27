@@ -30,7 +30,13 @@ fn main(){
     event.set_tags(tags);
 
     let mut timestamp = Timestamp::new();
-    timestamp.set_seconds(TryFrom::try_from(SystemTime::now().elapsed().unwrap().as_secs()).unwrap());
+
+    let since = SystemTime::now().duration_since(SystemTime::UNIX_EPOCH).unwrap();
+    let sec = since.as_secs();
+    let nsec = since.subsec_nanos();
+
+    timestamp.set_seconds(TryFrom::try_from(sec).unwrap());
+    timestamp.set_nanos(TryFrom::try_from(nsec).unwrap());
     event.set_timestamp(timestamp);
 
     println!("{:?}", event);
