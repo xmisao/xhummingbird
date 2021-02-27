@@ -1,4 +1,4 @@
-use xhummingbird_server::protos::request::Request;
+use xhummingbird_server::protos::event::Event;
 use protobuf::Message;
 use std::sync::{Mutex, Arc};
 use std::thread;
@@ -30,10 +30,10 @@ fn start_worker_thread(store_reference: Arc<Mutex<Store>>) -> JoinHandle<Thread>
 
         loop {
             let bytes = subscriber.recv_bytes(0).unwrap();
-            let request = Request::parse_from_bytes(&bytes).unwrap();
+            let event = Event::parse_from_bytes(&bytes).unwrap();
 
             let mut store = store_reference.lock().unwrap();
-            store.put(request);
+            store.put(event);
         }
     })
 }
@@ -49,7 +49,7 @@ fn start_control_thread(store_reference: Arc<Mutex<Store>>) -> JoinHandle<Thread
 
                     match &*input {
                         "print" => {
-                            println!("Requests:");
+                            println!("Events:");
                             let store = store_reference.lock().unwrap();
                             store.print();
                         },
@@ -66,7 +66,7 @@ fn start_control_thread(store_reference: Arc<Mutex<Store>>) -> JoinHandle<Thread
 }
 
 struct Store {
-    data: Vec<Request>
+    data: Vec<Event>
 }
 
 impl Store {
@@ -76,8 +76,8 @@ impl Store {
         }
     }
 
-    pub fn put(&mut self, request: Request){
-        self.data.push(request);
+    pub fn put(&mut self, event: Event){
+        self.data.push(event);
     }
 
     pub fn print(&self){

@@ -2,7 +2,7 @@ syntax = "proto3";
 
 import "google/protobuf/timestamp.proto";
 
-message Request {
+message Event {
   uint32 level = 1;
   string title = 2;
   string message = 3;

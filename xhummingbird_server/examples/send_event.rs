@@ -1,4 +1,4 @@
-use xhummingbird_server::protos::request::Request;
+use xhummingbird_server::protos::event::Event;
 use protobuf::Message;
 use protobuf::RepeatedField;
 use protobuf::well_known_types::Timestamp;
@@ -8,30 +8,30 @@ use std::time::{Duration, SystemTime};
 use std::convert::TryFrom;
 
 fn main(){
-    println!("send_request started.");
+    println!("send_event started.");
 
     let context = zmq::Context::new();
     let publisher = context.socket(zmq::PUB).unwrap();
     assert!(publisher.connect("tcp://localhost:8800").is_ok());
 
-    // Send requests to localhost 100 times
+    // Send events to localhost 100 times
     for n in 0..100 {
-        let request = build_sample_request(n);
-        println!("{:?}", request);
-        let bytes = request.write_to_bytes().unwrap();
+        let event = build_sample_event(n);
+        println!("{:?}", event);
+        let bytes = event.write_to_bytes().unwrap();
 
         publisher.send(&bytes, 0).unwrap();
         thread::sleep(Duration::from_millis(1000));
     }
 
-    println!("send_request finished.");
+    println!("send_event finished.");
 }
 
-fn build_sample_request(n: u32) -> Request {
-    let mut request = Request::new();
-    request.set_level(1);
-    request.set_title("UnknownError".to_string());
-    request.set_message(format!("Something wrong #{}", n));
+fn build_sample_event(n: u32) -> Event {
+    let mut event = Event::new();
+    event.set_level(1);
+    event.set_title("SampleEvent".to_string());
+    event.set_message(format!("Something happend #{}", n));
 
     let trace = RepeatedField::from_vec(
         vec!(
@@ -40,15 +40,15 @@ fn build_sample_request(n: u32) -> Request {
             "trace 3".to_string(),
         )
     );
-    request.set_trace(trace);
+    event.set_trace(trace);
 
     let mut tags = HashMap::new();
     tags.insert("key".to_string(), "value".to_string());
-    request.set_tags(tags);
+    event.set_tags(tags);
 
     let mut timestamp = Timestamp::new();
     timestamp.set_seconds(TryFrom::try_from(SystemTime::now().elapsed().unwrap().as_secs()).unwrap());
-    request.set_timestamp(timestamp);
+    event.set_timestamp(timestamp);
 
-    request
+    event
 }

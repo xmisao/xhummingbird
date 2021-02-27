@@ -1,4 +1,4 @@
-use xhummingbird_server::protos::request::Request;
+use xhummingbird_server::protos::event::Event;
 use protobuf::Message;
 use protobuf::RepeatedField;
 use std::collections::HashMap;
@@ -9,12 +9,12 @@ use std::time::SystemTime;
 use std::convert::TryFrom;
 
 fn main(){
-    println!("write_request started.");
+    println!("write_event started.");
 
-    let mut request = Request::new();
-    request.set_level(1);
-    request.set_title("UnknownError".to_string());
-    request.set_message("Something wrong".to_string());
+    let mut event = Event::new();
+    event.set_level(1);
+    event.set_title("SampleEvent".to_string());
+    event.set_message("Something happend".to_string());
 
     let trace = RepeatedField::from_vec(
         vec!(
@@ -23,22 +23,22 @@ fn main(){
             "trace 3".to_string(),
         )
     );
-    request.set_trace(trace);
+    event.set_trace(trace);
 
     let mut tags = HashMap::new();
     tags.insert("key".to_string(), "value".to_string());
-    request.set_tags(tags);
+    event.set_tags(tags);
 
     let mut timestamp = Timestamp::new();
     timestamp.set_seconds(TryFrom::try_from(SystemTime::now().elapsed().unwrap().as_secs()).unwrap());
-    request.set_timestamp(timestamp);
+    event.set_timestamp(timestamp);
 
-    println!("{:?}", request);
+    println!("{:?}", event);
 
-    // Write request to request.bin
-    let mut file = File::create("request.bin").unwrap();
-    let bytes = request.write_to_bytes().unwrap();
+    // Write event to event.bin
+    let mut file = File::create("event.bin").unwrap();
+    let bytes = event.write_to_bytes().unwrap();
     file.write(&bytes);
 
-    println!("write_request finished.");
+    println!("write_event finished.");
 }
