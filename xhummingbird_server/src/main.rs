@@ -5,6 +5,8 @@ use std::thread;
 use std::thread::Thread;
 use std::thread::JoinHandle;
 use std::io;
+use std::collections::BTreeMap;
+use std::convert::TryInto;
 
 fn main() {
     let store = Arc::new(Mutex::new(Store::new()));
@@ -48,10 +50,10 @@ fn start_control_thread(store_reference: Arc<Mutex<Store>>) -> JoinHandle<Thread
                     let input = input.trim();
 
                     match &*input {
-                        "print" => {
+                        "head" => {
                             println!("Events:");
                             let store = store_reference.lock().unwrap();
-                            store.print();
+                            store.head();
                         },
                         _ => {
                             println!("Unknown command: {}", input);
@@ -66,22 +68,26 @@ fn start_control_thread(store_reference: Arc<Mutex<Store>>) -> JoinHandle<Thread
 }
 
 struct Store {
-    data: Vec<Event>
+    data: BTreeMap<u64, Event>
 }
 
 impl Store {
     pub fn new() -> Store{
         Store{
-            data: Vec::new()
+            data: BTreeMap::new()
         }
     }
 
     pub fn put(&mut self, event: Event){
-        self.data.push(event);
+        let nsec:u64 = event.get_timestamp().get_nanos().try_into().unwrap();
+        let sec:u64 = event.get_timestamp().get_seconds().try_into().unwrap();
+        let time = sec * 1_000_000_000 + nsec;
+
+        self.data.insert(time, event);
     }
 
-    pub fn print(&self){
-        for event in &self.data {
+    pub fn head(&self){
+        for (_, event) in self.data.iter().rev().take(10) {
             println!("{:?}", event);
         }
     }
