@@ -15,18 +15,21 @@ fn main() {
     let storage_reference = Arc::clone(&store);
     let control_reference = Arc::clone(&store);
 
-    let (tx, rx) = channel();
+    let (tx1, rx1) = channel();
+    let (tx2, rx2) = channel();
 
-    let receiver_thread = start_receiver_thread(tx);
-    let storage_thread = start_storage_thread(rx, storage_reference);
+    let receiver_thread = start_receiver_thread(tx1, tx2);
+    let storage_thread = start_storage_thread(rx1, storage_reference);
+    let notification_thread = start_notification_thread(rx2);
     let control_thread = start_control_thread(control_reference);
 
     receiver_thread.join().unwrap();
     storage_thread.join().unwrap();
     control_thread.join().unwrap();
+    notification_thread.join().unwrap();
 }
 
-fn start_receiver_thread(tx: Sender<Event>) -> JoinHandle<Thread> {
+fn start_receiver_thread(tx1: Sender<Event>, tx2: Sender<Event>) -> JoinHandle<Thread> {
     thread::spawn(move || {
         let address = "tcp://*:8800";
         let context = zmq::Context::new();
@@ -40,7 +43,8 @@ fn start_receiver_thread(tx: Sender<Event>) -> JoinHandle<Thread> {
             let bytes = subscriber.recv_bytes(0).unwrap();
             let event = Event::parse_from_bytes(&bytes).unwrap();
 
-            tx.send(event).unwrap();
+            tx1.send(event.clone()).unwrap();
+            tx2.send(event.clone()).unwrap();
         }
     })
 }
@@ -52,6 +56,16 @@ fn start_storage_thread(rx: Receiver<Event>, store_reference: Arc<Mutex<Store>>)
 
             let mut store = store_reference.lock().unwrap();
             store.put(event);
+        }
+    })
+}
+
+fn start_notification_thread(rx: Receiver<Event>) -> JoinHandle<Thread> {
+    thread::spawn(move || {
+        loop {
+            let event = rx.recv().unwrap();
+
+            println!("notification {:?}", event);
         }
     })
 }
