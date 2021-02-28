@@ -7,20 +7,26 @@ use std::thread::JoinHandle;
 use std::io;
 use std::collections::BTreeMap;
 use std::convert::TryInto;
+use std::sync::mpsc::{Sender, Receiver};
+use std::sync::mpsc::channel;
 
 fn main() {
     let store = Arc::new(Mutex::new(Store::new()));
-    let worker_reference = Arc::clone(&store);
+    let storage_reference = Arc::clone(&store);
     let control_reference = Arc::clone(&store);
 
-    let worker_thread = start_worker_thread(worker_reference);
+    let (tx, rx) = channel();
+
+    let receiver_thread = start_receiver_thread(tx);
+    let storage_thread = start_storage_thread(rx, storage_reference);
     let control_thread = start_control_thread(control_reference);
 
-    worker_thread.join().unwrap();
+    receiver_thread.join().unwrap();
+    storage_thread.join().unwrap();
     control_thread.join().unwrap();
 }
 
-fn start_worker_thread(store_reference: Arc<Mutex<Store>>) -> JoinHandle<Thread> {
+fn start_receiver_thread(tx: Sender<Event>) -> JoinHandle<Thread> {
     thread::spawn(move || {
         let address = "tcp://*:8800";
         let context = zmq::Context::new();
@@ -33,6 +39,16 @@ fn start_worker_thread(store_reference: Arc<Mutex<Store>>) -> JoinHandle<Thread>
         loop {
             let bytes = subscriber.recv_bytes(0).unwrap();
             let event = Event::parse_from_bytes(&bytes).unwrap();
+
+            tx.send(event).unwrap();
+        }
+    })
+}
+
+fn start_storage_thread(rx: Receiver<Event>, store_reference: Arc<Mutex<Store>>) -> JoinHandle<Thread> {
+    thread::spawn(move || {
+        loop {
+            let event = rx.recv().unwrap();
 
             let mut store = store_reference.lock().unwrap();
             store.put(event);
