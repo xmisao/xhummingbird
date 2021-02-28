@@ -1,16 +1,20 @@
-use xhummingbird_server::protos::event::Event;
-use protobuf::Message;
-use std::sync::{Mutex, Arc};
-use std::thread;
-use std::thread::Thread;
-use std::thread::JoinHandle;
-use std::io;
 use std::collections::BTreeMap;
 use std::convert::TryInto;
-use std::sync::mpsc::{Sender, Receiver};
-use std::sync::mpsc::channel;
+use std::env;
+use std::io;
+use std::sync::mpsc::{channel, Sender, Receiver};
+use std::sync::{Mutex, Arc};
+use std::thread::{Thread, JoinHandle};
+use std::thread;
+use xhummingbird_server::protos::event::Event;
+use protobuf::Message;
+extern crate slack_hook;
+use slack_hook::{Slack, PayloadBuilder};
 
 fn main() {
+    let slack_incoming_webhook_endpoint:&str = &env::var("XH_SLACK_INCOMING_WEBHOOK_ENDPOINT").unwrap();
+    let slack = Slack::new(slack_incoming_webhook_endpoint).unwrap();
+
     let store = Arc::new(Mutex::new(Store::new()));
     let storage_reference = Arc::clone(&store);
     let control_reference = Arc::clone(&store);
@@ -20,7 +24,7 @@ fn main() {
 
     let receiver_thread = start_receiver_thread(tx1, tx2);
     let storage_thread = start_storage_thread(rx1, storage_reference);
-    let notification_thread = start_notification_thread(rx2);
+    let notification_thread = start_notification_thread(rx2, slack);
     let control_thread = start_control_thread(control_reference);
 
     receiver_thread.join().unwrap();
@@ -60,12 +64,24 @@ fn start_storage_thread(rx: Receiver<Event>, store_reference: Arc<Mutex<Store>>)
     })
 }
 
-fn start_notification_thread(rx: Receiver<Event>) -> JoinHandle<Thread> {
+fn start_notification_thread(rx: Receiver<Event>, slack: Slack) -> JoinHandle<Thread> {
     thread::spawn(move || {
         loop {
             let event = rx.recv().unwrap();
 
-            println!("notification {:?}", event);
+            let p = PayloadBuilder::new()
+                .text(format!("title: {}\nmessage: {}", event.get_title(), event.get_message()))
+                .username("xHummingbird")
+                .icon_emoji(":exclamation:")
+                .build()
+                .unwrap();
+
+            let res = slack.send(&p);
+
+            match res {
+                Ok(()) => (),
+                Err(x) => println!("Notification error: {:?}", x)
+            }
         }
     })
 }
