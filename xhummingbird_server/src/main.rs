@@ -10,8 +10,13 @@ use xhummingbird_server::protos::event::Event;
 use protobuf::Message;
 extern crate slack_hook;
 use slack_hook::{Slack, PayloadBuilder};
+use actix_web::{get, App, HttpServer, Responder};
 
 fn main() {
+    ctrlc::set_handler(move || {
+        std::process::exit(0);
+    }).unwrap();
+
     let slack_incoming_webhook_endpoint:&str = &env::var("XH_SLACK_INCOMING_WEBHOOK_ENDPOINT").unwrap();
     let slack = Slack::new(slack_incoming_webhook_endpoint).unwrap();
 
@@ -26,11 +31,32 @@ fn main() {
     let storage_thread = start_storage_thread(rx1, storage_reference);
     let notification_thread = start_notification_thread(rx2, slack);
     let control_thread = start_control_thread(control_reference);
+    let web_server_thread = start_web_server_thread();
 
     receiver_thread.join().unwrap();
     storage_thread.join().unwrap();
     control_thread.join().unwrap();
     notification_thread.join().unwrap();
+    web_server_thread.join().unwrap();
+}
+
+fn start_web_server_thread() -> JoinHandle<()> {
+    thread::spawn(move || {
+        start_web_server().unwrap();
+    })
+}
+
+#[get("/")]
+async fn root() -> impl Responder {
+    "xHummingbird"
+}
+
+#[actix_web::main]
+async fn start_web_server() -> std::io::Result<()> {
+    HttpServer::new(|| App::new().service(root))
+        .bind("0.0.0.0:8080")?
+        .run()
+        .await
 }
 
 fn start_receiver_thread(tx1: Sender<Event>, tx2: Sender<Event>) -> JoinHandle<Thread> {
