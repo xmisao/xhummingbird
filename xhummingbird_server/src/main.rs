@@ -10,8 +10,9 @@ use xhummingbird_server::protos::event::Event;
 use protobuf::Message;
 extern crate slack_hook;
 use slack_hook::{Slack, PayloadBuilder};
-use actix_web::{get, App, HttpServer, HttpResponse, Responder};
+use actix_web::{get, web, App, HttpServer, HttpResponse, Responder};
 use sailfish::TemplateOnce;
+use chrono::{Utc, TimeZone};
 
 fn main() {
     ctrlc::set_handler(move || {
@@ -24,6 +25,7 @@ fn main() {
     let store = Arc::new(Mutex::new(Store::new()));
     let storage_reference = Arc::clone(&store);
     let control_reference = Arc::clone(&store);
+    let web_server_reference = Arc::clone(&store);
 
     let (tx1, rx1) = channel();
     let (tx2, rx2) = channel();
@@ -32,7 +34,7 @@ fn main() {
     let storage_thread = start_storage_thread(rx1, storage_reference);
     let notification_thread = start_notification_thread(rx2, slack);
     let control_thread = start_control_thread(control_reference);
-    let web_server_thread = start_web_server_thread();
+    let web_server_thread = start_web_server_thread(web_server_reference);
 
     receiver_thread.join().unwrap();
     storage_thread.join().unwrap();
@@ -46,9 +48,47 @@ fn main() {
 struct RootTemplate {
 }
 
-fn start_web_server_thread() -> JoinHandle<()> {
+struct DisplayableEvent {
+    level: u32,
+    title: String,
+    message: String,
+    trace: Vec<String>,
+    tags: Vec<(String, String)>,
+    timestamp_rfc2822: String,
+
+}
+
+#[derive(TemplateOnce)]
+#[template(path = "events.html")]
+struct EventsTemplate {
+    events: Vec<DisplayableEvent>
+}
+
+
+impl DisplayableEvent {
+    pub fn from_event(event: &Event) -> DisplayableEvent{
+        let timestamp = event.get_timestamp();
+        let utc = Utc.timestamp(timestamp.get_seconds(), 0);
+        let timestamp_rfc2822 = utc.to_rfc2822();
+
+        DisplayableEvent{
+            level: event.get_level(),
+            title: event.get_title().to_string(),
+            message: event.get_message().to_string(),
+            trace: event.get_trace().to_vec(),
+            tags: event.get_tags().iter().map(|(k, v)| (k.clone(), v.clone())).collect(),
+            timestamp_rfc2822,
+        }
+    }
+}
+
+struct WebState {
+    store_reference: Arc<Mutex<Store>>
+}
+
+fn start_web_server_thread(store_reference: Arc<Mutex<Store>>) -> JoinHandle<()> {
     thread::spawn(move || {
-        start_web_server().unwrap();
+        start_web_server(store_reference).unwrap();
     })
 }
 
@@ -59,12 +99,30 @@ async fn root() -> impl Responder {
     HttpResponse::Ok().content_type("text/html").body(body)
 }
 
+#[get("/events")]
+async fn events_root(data: web::Data<WebState>) -> impl Responder {
+    let store_reference = &data.store_reference;
+    let store = store_reference.lock().unwrap();
+    let events = store.head().iter().map(|event| DisplayableEvent::from_event(event)).collect();
+    let tmpl = EventsTemplate{events};
+    let body = tmpl.render_once().unwrap();
+    HttpResponse::Ok().content_type("text/html").body(body)
+}
+
 #[actix_web::main]
-async fn start_web_server() -> std::io::Result<()> {
-    HttpServer::new(|| App::new().service(root))
-        .bind("0.0.0.0:8801")?
-        .run()
-        .await
+async fn start_web_server(store_reference: Arc<Mutex<Store>>) -> std::io::Result<()> {
+    let address = "0.0.0.0:8801";
+
+    println!("xHummingbird web server started at {}", address);
+
+    HttpServer::new(move ||
+        App::new()
+            .data(WebState{store_reference: store_reference.clone()})
+            .service(root)
+            .service(events_root)
+        ).bind(address)?
+         .run()
+         .await
 }
 
 fn start_receiver_thread(tx1: Sender<Event>, tx2: Sender<Event>) -> JoinHandle<Thread> {
@@ -75,7 +133,7 @@ fn start_receiver_thread(tx1: Sender<Event>, tx2: Sender<Event>) -> JoinHandle<T
         assert!(subscriber.bind(address).is_ok());
         assert!(subscriber.set_subscribe("".as_bytes()).is_ok()); // NOTE: Subscribe all
 
-        println!("xHummingbird server started at {}", address);
+        println!("xHummingbird event receiver started at {}", address);
 
         loop {
             let bytes = subscriber.recv_bytes(0).unwrap();
@@ -133,7 +191,9 @@ fn start_control_thread(store_reference: Arc<Mutex<Store>>) -> JoinHandle<Thread
                         "head" => {
                             println!("Events:");
                             let store = store_reference.lock().unwrap();
-                            store.head();
+                            for event in store.head() {
+                                println!("{:?}", event);
+                            }
                         },
                         _ => {
                             println!("Unknown command: {}", input);
@@ -166,9 +226,7 @@ impl Store {
         self.data.insert(time, event);
     }
 
-    pub fn head(&self){
-        for (_, event) in self.data.iter().rev().take(10) {
-            println!("{:?}", event);
-        }
+    pub fn head(&self) -> Vec<&Event>{
+        self.data.iter().rev().take(10).map(|t| t.1).collect()
     }
 }

@@ -1,0 +1,39 @@
+<html>
+  <head>
+    <title>xHummingbird</title>
+  </head>
+  <body>
+    <div>
+      <a href="/">Index</a> &gt; Events
+    </div>
+    <h1>Events</h1>
+    <table border="1">
+      <tr>
+        <th>Level</th>
+        <th>Title</th>
+        <th>Message</th>
+        <th>Trace</th>
+        <th>Tags</th>
+        <th>Timestamp</th>
+      </tr>
+      <% for event in events { %>
+      <tr>
+        <td><%= event.level %></td>
+        <td><%= event.title %></td>
+        <td><%= event.message %></td>
+        <td>
+          <% for t in event.trace { %>
+          <div><%= t %></div>
+          <% } %>
+        </td>
+        <td>
+          <% for (k, v) in event.tags { %>
+          <div><%= k %>:<%= v %></div>
+          <% } %>
+        </td>
+        <td><%= event.timestamp_rfc2822 %></td>
+      </tr>
+      <% } %>
+    </table>
+  </body>
+</html>
