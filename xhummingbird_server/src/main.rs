@@ -10,7 +10,8 @@ use xhummingbird_server::protos::event::Event;
 use protobuf::Message;
 extern crate slack_hook;
 use slack_hook::{Slack, PayloadBuilder};
-use actix_web::{get, App, HttpServer, Responder};
+use actix_web::{get, App, HttpServer, HttpResponse, Responder};
+use sailfish::TemplateOnce;
 
 fn main() {
     ctrlc::set_handler(move || {
@@ -40,6 +41,11 @@ fn main() {
     web_server_thread.join().unwrap();
 }
 
+#[derive(TemplateOnce)]
+#[template(path = "index.html")]
+struct RootTemplate {
+}
+
 fn start_web_server_thread() -> JoinHandle<()> {
     thread::spawn(move || {
         start_web_server().unwrap();
@@ -48,13 +54,15 @@ fn start_web_server_thread() -> JoinHandle<()> {
 
 #[get("/")]
 async fn root() -> impl Responder {
-    "xHummingbird"
+    let tmpl = RootTemplate{};
+    let body = tmpl.render_once().unwrap();
+    HttpResponse::Ok().content_type("text/html").body(body)
 }
 
 #[actix_web::main]
 async fn start_web_server() -> std::io::Result<()> {
     HttpServer::new(|| App::new().service(root))
-        .bind("0.0.0.0:8080")?
+        .bind("0.0.0.0:8801")?
         .run()
         .await
 }
