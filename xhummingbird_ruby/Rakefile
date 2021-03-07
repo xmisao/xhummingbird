@@ -13,4 +13,8 @@ require "rubocop/rake_task"
 
 RuboCop::RakeTask.new
 
+task :protoc do
+  sh 'protoc --proto_path=../xhummingbird_server/protos --ruby_out=lib/xhummingbird/protos ../xhummingbird_server/protos/*.proto'
+end
+
 task default: %i[test rubocop]

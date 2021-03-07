@@ -1,5 +1,7 @@
 syntax = "proto3";
 
+package xhummingbird;
+
 import "google/protobuf/timestamp.proto";
 
 message Event {
