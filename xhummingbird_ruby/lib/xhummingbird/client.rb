@@ -18,7 +18,7 @@ module Xhummingbird
       return @socket if defined? @socket
 
       ctx = ZMQ::Context.new
-      @socket = ctx.socket(ZMQ::PUB)
+      @socket = ctx.socket(ZMQ::PUSH)
       @socket.connect(address)
 
       @socket

@@ -11,11 +11,11 @@ fn main(){
     println!("send_event started.");
 
     let context = zmq::Context::new();
-    let publisher = context.socket(zmq::PUB).unwrap();
+    let publisher = context.socket(zmq::PUSH).unwrap();
     assert!(publisher.connect("tcp://localhost:8800").is_ok());
 
     // Send events to localhost 100 times
-    for n in 0..100 {
+    for n in 0..10 {
         let event = build_sample_event(n);
         println!("{:?}", event);
         let bytes = event.write_to_bytes().unwrap();
@@ -25,6 +25,8 @@ fn main(){
     }
 
     println!("send_event finished.");
+
+    thread::park();
 }
 
 fn build_sample_event(n: u32) -> Event {

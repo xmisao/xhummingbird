@@ -129,9 +129,8 @@ fn start_receiver_thread(tx1: Sender<Event>, tx2: Sender<Event>) -> JoinHandle<T
     thread::spawn(move || {
         let address = "tcp://*:8800";
         let context = zmq::Context::new();
-        let subscriber = context.socket(zmq::SUB).unwrap();
+        let subscriber = context.socket(zmq::PULL).unwrap();
         assert!(subscriber.bind(address).is_ok());
-        assert!(subscriber.set_subscribe("".as_bytes()).is_ok()); // NOTE: Subscribe all
 
         println!("xHummingbird event receiver started at {}", address);
 
