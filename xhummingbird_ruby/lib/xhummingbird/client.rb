@@ -15,17 +15,31 @@ module Xhummingbird
     private
 
     def socket
-      return @socket if defined? @socket
+      return @socket if defined?(@socket) && @pid == Process.pid
 
-      ctx = ZMQ::Context.new
-      @socket = ctx.socket(ZMQ::PUSH)
-      @socket.connect(address)
+      @socket = init_socket
+    end
 
-      @socket
+    def init_socket
+      mutex.synchronize do
+        return @socket if defined?(@socket) && @pid == Process.pid
+
+        @pid = Process.pid
+
+        ctx = ZMQ::Context.new
+        socket = ctx.socket(ZMQ::PUSH)
+        socket.connect(address)
+
+        @socket = socket
+      end
     end
 
     def address
       ENV[XH_SERVER]
+    end
+
+    def mutex
+      @mutex ||= Mutex.new
     end
   end
 end

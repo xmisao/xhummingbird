@@ -19,5 +19,5 @@ raise "Set #{Xhummingbird::Client::XH_SERVER} environment variable" unless Xhumm
     )
   end
 
-  sleep 1
+  sleep 1 # Await sending
 end
