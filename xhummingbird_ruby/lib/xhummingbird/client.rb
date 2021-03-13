@@ -4,6 +4,10 @@ module Xhummingbird
 
     XH_SERVER = 'XH_SERVER'
 
+    def initialize
+      @mutex = Mutex.new
+    end
+
     def send(message)
       socket.send_string(message)
     end
@@ -21,7 +25,7 @@ module Xhummingbird
     end
 
     def init_socket
-      mutex.synchronize do
+      @mutex.synchronize do
         return @socket if defined?(@socket) && @pid == Process.pid
 
         @pid = Process.pid
@@ -36,10 +40,6 @@ module Xhummingbird
 
     def address
       ENV[XH_SERVER]
-    end
-
-    def mutex
-      @mutex ||= Mutex.new
     end
   end
 end
