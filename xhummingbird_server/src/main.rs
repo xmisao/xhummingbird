@@ -13,8 +13,10 @@ use slack_hook::{Slack, PayloadBuilder};
 use actix_web::{get, web, App, HttpServer, HttpResponse, Responder};
 use sailfish::TemplateOnce;
 use chrono::{Utc, TimeZone};
+use actix::prelude::*;
 
-fn main() {
+#[actix_web::main]
+async fn main() {
     ctrlc::set_handler(move || {
         std::process::exit(0);
     }).unwrap();
@@ -34,13 +36,12 @@ fn main() {
     let storage_thread = start_storage_thread(rx1, storage_reference);
     let notification_thread = start_notification_thread(rx2, slack);
     let control_thread = start_control_thread(control_reference);
-    let web_server_thread = start_web_server_thread(web_server_reference);
+    start_web_server(web_server_reference).await.unwrap();
 
     receiver_thread.join().unwrap();
     storage_thread.join().unwrap();
     control_thread.join().unwrap();
     notification_thread.join().unwrap();
-    web_server_thread.join().unwrap();
 }
 
 #[derive(TemplateOnce)]
@@ -86,12 +87,6 @@ struct WebState {
     store_reference: Arc<Mutex<Store>>
 }
 
-fn start_web_server_thread(store_reference: Arc<Mutex<Store>>) -> JoinHandle<()> {
-    thread::spawn(move || {
-        start_web_server(store_reference).unwrap();
-    })
-}
-
 #[get("/")]
 async fn root() -> impl Responder {
     let tmpl = RootTemplate{};
@@ -109,7 +104,6 @@ async fn events_root(data: web::Data<WebState>) -> impl Responder {
     HttpResponse::Ok().content_type("text/html").body(body)
 }
 
-#[actix_web::main]
 async fn start_web_server(store_reference: Arc<Mutex<Store>>) -> std::io::Result<()> {
     let address = "0.0.0.0:8801";
 
