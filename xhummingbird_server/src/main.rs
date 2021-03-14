@@ -15,8 +15,6 @@ use sailfish::TemplateOnce;
 use chrono::{Utc, TimeZone};
 use actix::prelude::*;
 
-// #[actix_web::main]
-// async fn main() {
 fn main() {
     ctrlc::set_handler(move || {
         std::process::exit(0);
@@ -40,7 +38,6 @@ fn main() {
     let notification_thread = start_notification_thread(rx2, slack);
     let control_thread = start_control_thread(control_reference);
 
-    // let srv = start_web_server(web_server_reference);
     let address = "0.0.0.0:8801";
 
     let srv = HttpServer::new(move ||
@@ -117,22 +114,6 @@ async fn events_root(data: web::Data<WebState>) -> impl Responder {
     HttpResponse::Ok().content_type("text/html").body(body)
 }
 
-/*
-fn start_web_server(storage_actor: Addr<StorageActor>) {
-    let address = "0.0.0.0:8801";
-
-    println!("xHummingbird web server started at {}", address);
-
-    HttpServer::new(move ||
-        App::new()
-            .data(WebState{storage_actor: storage_actor.clone()})
-            .service(root)
-            .service(events_root)
-        ).bind(address)?
-         .run()
-}
-*/
-
 fn start_receiver_thread(storage_actor_address: Addr<StorageActor>, tx2: Sender<Event>){
     actix::spawn(async move {
         let address = "tcp://*:8800";
@@ -147,24 +128,10 @@ fn start_receiver_thread(storage_actor_address: Addr<StorageActor>, tx2: Sender<
             let event = Event::parse_from_bytes(&bytes).unwrap();
 
             storage_actor_address.send(PutEvent{event: event.clone()}).await.unwrap();
-            // tx1.send(event.clone()).unwrap();
             tx2.send(event.clone()).unwrap();
         }
     })
 }
-
-/*
-fn start_storage_thread(rx: Receiver<Event>, store_reference: Arc<Mutex<Store>>) -> JoinHandle<Thread> {
-    thread::spawn(move || {
-        loop {
-            let event = rx.recv().unwrap();
-
-            let mut store = store_reference.lock().unwrap();
-            store.put(event);
-        }
-    })
-}
-*/
 
 fn start_notification_thread(rx: Receiver<Event>, slack: Slack) -> JoinHandle<Thread> {
     thread::spawn(move || {
