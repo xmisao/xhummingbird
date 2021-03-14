@@ -2,10 +2,9 @@ use std::collections::BTreeMap;
 use std::convert::TryInto;
 use std::env;
 use std::io;
-use std::sync::mpsc::{channel, Sender, Receiver};
-use std::sync::{Mutex, Arc};
 use std::thread::{Thread, JoinHandle};
 use std::thread;
+use std::time;
 use xhummingbird_server::protos::event::Event;
 use protobuf::Message;
 extern crate slack_hook;
@@ -13,34 +12,44 @@ use slack_hook::{Slack, PayloadBuilder};
 use actix_web::{get, web, App, HttpServer, HttpResponse, Responder};
 use sailfish::TemplateOnce;
 use chrono::{Utc, TimeZone};
+use actix::prelude::*;
 
 fn main() {
     ctrlc::set_handler(move || {
         std::process::exit(0);
     }).unwrap();
 
+    let mut sys = actix::System::new("app");
+
     let slack_incoming_webhook_endpoint:&str = &env::var("XH_SLACK_INCOMING_WEBHOOK_ENDPOINT").unwrap();
     let slack = Slack::new(slack_incoming_webhook_endpoint).unwrap();
+    let notification_actor = NotificationActor{slack};
+    let notification_actor_address= notification_actor.start();
 
-    let store = Arc::new(Mutex::new(Store::new()));
-    let storage_reference = Arc::clone(&store);
-    let control_reference = Arc::clone(&store);
-    let web_server_reference = Arc::clone(&store);
+    let store = Store::new();
+    let storage_actor = StorageActor{store};
+    let storage_actor_address = storage_actor.start();
 
-    let (tx1, rx1) = channel();
-    let (tx2, rx2) = channel();
+    let receiver_thread = start_receiver_thread(storage_actor_address.clone(), notification_actor_address.clone());
 
-    let receiver_thread = start_receiver_thread(tx1, tx2);
-    let storage_thread = start_storage_thread(rx1, storage_reference);
-    let notification_thread = start_notification_thread(rx2, slack);
-    let control_thread = start_control_thread(control_reference);
-    let web_server_thread = start_web_server_thread(web_server_reference);
+    let addr = storage_actor_address.clone();
 
-    receiver_thread.join().unwrap();
-    storage_thread.join().unwrap();
-    control_thread.join().unwrap();
-    notification_thread.join().unwrap();
-    web_server_thread.join().unwrap();
+    let control_actor = ControlActor{storage_actor_address: storage_actor_address.clone()};
+    let control_actor_address = control_actor.start();
+    start_input_thread(control_actor_address);
+
+    let address = "0.0.0.0:8801";
+
+    let srv = HttpServer::new(move ||
+                              App::new()
+                              .data(WebState{storage_actor: storage_actor_address.clone()})
+                              .service(root)
+                              .service(events_root)
+                             ).bind(address).unwrap().run();
+
+    println!("xHummingbird web server started at {}", address);
+
+    sys.block_on(srv);
 }
 
 #[derive(TemplateOnce)]
@@ -83,13 +92,7 @@ impl DisplayableEvent {
 }
 
 struct WebState {
-    store_reference: Arc<Mutex<Store>>
-}
-
-fn start_web_server_thread(store_reference: Arc<Mutex<Store>>) -> JoinHandle<()> {
-    thread::spawn(move || {
-        start_web_server(store_reference).unwrap();
-    })
+    storage_actor: Addr<StorageActor>
 }
 
 #[get("/")]
@@ -101,31 +104,15 @@ async fn root() -> impl Responder {
 
 #[get("/events")]
 async fn events_root(data: web::Data<WebState>) -> impl Responder {
-    let store_reference = &data.store_reference;
-    let store = store_reference.lock().unwrap();
-    let events = store.head().iter().map(|event| DisplayableEvent::from_event(event)).collect();
+    let storage_actor = &data.storage_actor;
+    let events:Vec<Event> = storage_actor.send(HeadEvents{}).await.unwrap().unwrap();
+    let events = events.iter().map(|event| DisplayableEvent::from_event(event)).collect();
     let tmpl = EventsTemplate{events};
     let body = tmpl.render_once().unwrap();
     HttpResponse::Ok().content_type("text/html").body(body)
 }
 
-#[actix_web::main]
-async fn start_web_server(store_reference: Arc<Mutex<Store>>) -> std::io::Result<()> {
-    let address = "0.0.0.0:8801";
-
-    println!("xHummingbird web server started at {}", address);
-
-    HttpServer::new(move ||
-        App::new()
-            .data(WebState{store_reference: store_reference.clone()})
-            .service(root)
-            .service(events_root)
-        ).bind(address)?
-         .run()
-         .await
-}
-
-fn start_receiver_thread(tx1: Sender<Event>, tx2: Sender<Event>) -> JoinHandle<Thread> {
+fn start_receiver_thread(storage_actor_address: Addr<StorageActor>, notification_actor_address: Addr<NotificationActor>){
     thread::spawn(move || {
         let address = "tcp://*:8800";
         let context = zmq::Context::new();
@@ -137,73 +124,30 @@ fn start_receiver_thread(tx1: Sender<Event>, tx2: Sender<Event>) -> JoinHandle<T
         loop {
             let bytes = subscriber.recv_bytes(0).unwrap();
             let event = Event::parse_from_bytes(&bytes).unwrap();
+            println!("{:?}", event);
 
-            tx1.send(event.clone()).unwrap();
-            tx2.send(event.clone()).unwrap();
+            let storage_actor_address = storage_actor_address.clone();
+
+            println!("{:?}", storage_actor_address.try_send(PutEvent{event: event.clone()}).unwrap());
+            println!("{:?}", notification_actor_address.try_send(PutEvent{event: event.clone()}).unwrap());
         }
-    })
+    });
 }
 
-fn start_storage_thread(rx: Receiver<Event>, store_reference: Arc<Mutex<Store>>) -> JoinHandle<Thread> {
-    thread::spawn(move || {
-        loop {
-            let event = rx.recv().unwrap();
-
-            let mut store = store_reference.lock().unwrap();
-            store.put(event);
-        }
-    })
-}
-
-fn start_notification_thread(rx: Receiver<Event>, slack: Slack) -> JoinHandle<Thread> {
-    thread::spawn(move || {
-        loop {
-            let event = rx.recv().unwrap();
-
-            let p = PayloadBuilder::new()
-                .text(format!("title: {}\nmessage: {}", event.get_title(), event.get_message()))
-                .username("xHummingbird")
-                .icon_emoji(":exclamation:")
-                .build()
-                .unwrap();
-
-            let res = slack.send(&p);
-
-            match res {
-                Ok(()) => (),
-                Err(x) => println!("Notification error: {:?}", x)
-            }
-        }
-    })
-}
-
-fn start_control_thread(store_reference: Arc<Mutex<Store>>) -> JoinHandle<Thread> {
-    thread::spawn(move || {
+fn start_input_thread(control_actor_address: Addr<ControlActor>){
+    thread::spawn(move ||{
         loop {
             let mut input = String::new();
 
             match io::stdin().read_line(&mut input) {
                 Ok(_) => {
-                    let input = input.trim();
-
-                    match &*input {
-                        "head" => {
-                            println!("Events:");
-                            let store = store_reference.lock().unwrap();
-                            for event in store.head() {
-                                println!("{:?}", event);
-                            }
-                        },
-                        _ => {
-                            println!("Unknown command: {}", input);
-                        }
-
-                    }
+                    let command = input.trim().to_string();
+                    control_actor_address.try_send(CommandInput{command});
                 },
                 Err(error) => println!("Error: {}", error),
             }
-        };
-    })
+        }
+    });
 }
 
 struct Store {
@@ -227,5 +171,122 @@ impl Store {
 
     pub fn head(&self) -> Vec<&Event>{
         self.data.iter().rev().take(10).map(|t| t.1).collect()
+    }
+}
+
+struct StorageActor{
+    store: Store
+}
+
+impl Actor for StorageActor{
+    type Context = Context<Self>;
+}
+
+impl Handler<PutEvent> for StorageActor {
+    type Result = std::result::Result<(), ()>;
+
+    fn handle(&mut self, msg: PutEvent, _ctx: &mut Context<Self>) -> Self::Result {
+        self.store.put(msg.event);
+        println!("PutEvent Hundler {:?}", self.store.head());
+        Ok(())
+    }
+}
+
+#[derive(Message)]
+#[rtype(result = "std::result::Result<(), ()>")]
+struct PutEvent{
+    event: Event
+}
+
+impl Handler<HeadEvents> for StorageActor {
+    type Result = std::result::Result<Vec<Event>, ()>;
+
+    fn handle(&mut self, _msg: HeadEvents, _ctx: &mut Context<Self>) -> Self::Result {
+        let mut events = Vec::new();
+
+        for event in self.store.head() {
+            events.push(event.clone());
+        }
+
+        Ok(events)
+    }
+}
+
+#[derive(Message)]
+#[rtype(result = "std::result::Result<(Vec<Event>), ()>")]
+struct HeadEvents{
+}
+
+struct NotificationActor{
+    slack: Slack
+}
+
+impl Actor for NotificationActor{
+    type Context = Context<Self>;
+}
+
+impl Handler<PutEvent> for NotificationActor {
+    type Result = std::result::Result<(), ()>;
+
+    fn handle(&mut self, msg: PutEvent, _ctx: &mut Context<Self>) -> Self::Result {
+        let event = msg.event;
+
+        let p = PayloadBuilder::new()
+            .text(format!("title: {}\nmessage: {}", event.get_title(), event.get_message()))
+            .username("xHummingbird")
+            .icon_emoji(":exclamation:")
+            .build()
+            .unwrap();
+
+        let res = self.slack.send(&p);
+
+        match res {
+            Ok(()) => (),
+            Err(x) => println!("Notification error: {:?}", x)
+        }
+
+        Ok(())
+    }
+}
+
+struct ControlActor{
+    storage_actor_address: Addr<StorageActor>
+}
+
+impl Actor for ControlActor{
+    type Context = Context<Self>;
+}
+
+#[derive(Message)]
+#[rtype(result = "std::result::Result<(), ()>")]
+struct CommandInput{
+    command: String
+}
+
+impl Handler<CommandInput> for ControlActor {
+    type Result = std::result::Result<(), ()>;
+
+    fn handle(&mut self, msg: CommandInput, _ctx: &mut Context<Self>) -> Self::Result {
+        let command = msg.command;
+        let storage_actor_address= self.storage_actor_address.clone();
+
+        actix::spawn(async move {
+            match &*command {
+                "head" => {
+                    println!("Events:");
+                    let s1 = storage_actor_address.send(HeadEvents{}).await.unwrap();
+                    println!("s1: {:?}", s1);
+
+                    for event in s1 {
+                        println!("{:?}", event);
+                    }
+                },
+                _ => {
+                    println!("Unknown command: {}", command);
+                }
+            }
+        });
+
+        Ok(())
     }
 }
