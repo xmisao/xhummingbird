@@ -6,6 +6,7 @@ use std::sync::mpsc::{channel, Sender, Receiver};
 use std::sync::{Mutex, Arc};
 use std::thread::{Thread, JoinHandle};
 use std::thread;
+use std::time;
 use xhummingbird_server::protos::event::Event;
 use protobuf::Message;
 extern crate slack_hook;
@@ -22,21 +23,31 @@ fn main() {
 
     let mut sys = actix::System::new("app");
 
-    let slack_incoming_webhook_endpoint:&str = &env::var("XH_SLACK_INCOMING_WEBHOOK_ENDPOINT").unwrap();
-    let slack = Slack::new(slack_incoming_webhook_endpoint).unwrap();
+    // let slack_incoming_webhook_endpoint:&str = &env::var("XH_SLACK_INCOMING_WEBHOOK_ENDPOINT").unwrap();
+    // let slack = Slack::new(slack_incoming_webhook_endpoint).unwrap();
 
     let store = Store::new();
     let storage_actor = StorageActor{store};
     let storage_actor_address = storage_actor.start();
 
-    let control_reference = storage_actor_address.clone();
+    // let control_reference = storage_actor_address.clone();
     let web_server_reference = storage_actor_address.clone();
 
     let (tx2, rx2) = channel();
-
     let receiver_thread = start_receiver_thread(storage_actor_address.clone(), tx2);
-    let notification_thread = start_notification_thread(rx2, slack);
-    let control_thread = start_control_thread(control_reference);
+
+    // let notification_thread = start_notification_thread(rx2, slack);
+    // let control_thread = start_control_thread(control_reference);
+
+
+    let addr = storage_actor_address.clone();
+    actix::spawn( async move {
+        loop {
+            println!("worker output");
+            println!("{:?}", addr.send(HeadEvents{}).await.unwrap());
+            thread::sleep(time::Duration::from_millis(1000));
+        }
+    });
 
     let address = "0.0.0.0:8801";
 
@@ -51,7 +62,7 @@ fn main() {
 
     sys.block_on(srv);
 
-    notification_thread.join().unwrap();
+    // notification_thread.join().unwrap();
 }
 
 #[derive(TemplateOnce)]
@@ -115,7 +126,8 @@ async fn events_root(data: web::Data<WebState>) -> impl Responder {
 }
 
 fn start_receiver_thread(storage_actor_address: Addr<StorageActor>, tx2: Sender<Event>){
-    actix::spawn(async move {
+    // actix::spawn_blocking(async move {
+    thread::spawn(move || {
         let address = "tcp://*:8800";
         let context = zmq::Context::new();
         let subscriber = context.socket(zmq::PULL).unwrap();
@@ -126,11 +138,14 @@ fn start_receiver_thread(storage_actor_address: Addr<StorageActor>, tx2: Sender<
         loop {
             let bytes = subscriber.recv_bytes(0).unwrap();
             let event = Event::parse_from_bytes(&bytes).unwrap();
+            println!("{:?}", event);
 
-            storage_actor_address.send(PutEvent{event: event.clone()}).await.unwrap();
-            tx2.send(event.clone()).unwrap();
+            let blk = async { storage_actor_address.send(PutEvent{event: event.clone()}).await.unwrap() };
+            // let _ = blk.await
+
+            // tx2.send(event.clone()).unwrap();
         }
-    })
+    });
 }
 
 fn start_notification_thread(rx: Receiver<Event>, slack: Slack) -> JoinHandle<Thread> {
