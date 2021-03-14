@@ -15,6 +15,10 @@ use sailfish::TemplateOnce;
 use chrono::{Utc, TimeZone};
 use actix::prelude::*;
 
+// use tokio::net::TcpListener;
+// use tokio::io::{AsyncReadExt, AsyncWriteExt};
+use tokio::prelude::*;
+
 #[actix_web::main]
 async fn main() {
     ctrlc::set_handler(move || {
@@ -24,23 +28,26 @@ async fn main() {
     let slack_incoming_webhook_endpoint:&str = &env::var("XH_SLACK_INCOMING_WEBHOOK_ENDPOINT").unwrap();
     let slack = Slack::new(slack_incoming_webhook_endpoint).unwrap();
 
-    let store = Arc::new(Mutex::new(Store::new()));
-    let storage_reference = Arc::clone(&store);
-    let control_reference = Arc::clone(&store);
-    let web_server_reference = Arc::clone(&store);
+    let store = Store::new();
+    let storage_actor = StorageActor{store};
+    let storage_actor_address = storage_actor.start();
 
-    let (tx1, rx1) = channel();
+    // let storage_reference = Arc::clone(&store);
+    let control_reference = storage_actor_address.clone();
+    let web_server_reference = storage_actor_address.clone();
+
+    // let (tx1, rx1) = channel();
     let (tx2, rx2) = channel();
 
-    let receiver_thread = start_receiver_thread(tx1, tx2);
-    let storage_thread = start_storage_thread(rx1, storage_reference);
+    let receiver_thread = start_receiver_thread(storage_actor_address.clone(), tx2);
+    // let storage_thread = start_storage_thread(rx1, storage_reference);
     let notification_thread = start_notification_thread(rx2, slack);
     let control_thread = start_control_thread(control_reference);
     start_web_server(web_server_reference).await.unwrap();
 
-    receiver_thread.join().unwrap();
-    storage_thread.join().unwrap();
-    control_thread.join().unwrap();
+    // receiver_thread.join().unwrap();
+    // storage_thread.join().unwrap();
+    // control_thread.join().unwrap();
     notification_thread.join().unwrap();
 }
 
@@ -84,7 +91,7 @@ impl DisplayableEvent {
 }
 
 struct WebState {
-    store_reference: Arc<Mutex<Store>>
+    storage_actor: Addr<StorageActor>
 }
 
 #[get("/")]
@@ -96,22 +103,22 @@ async fn root() -> impl Responder {
 
 #[get("/events")]
 async fn events_root(data: web::Data<WebState>) -> impl Responder {
-    let store_reference = &data.store_reference;
-    let store = store_reference.lock().unwrap();
-    let events = store.head().iter().map(|event| DisplayableEvent::from_event(event)).collect();
+    let storage_actor = &data.storage_actor;
+    let events:Vec<Event> = storage_actor.send(HeadEvents{}).await.unwrap().unwrap();
+    let events = events.iter().map(|event| DisplayableEvent::from_event(event)).collect();
     let tmpl = EventsTemplate{events};
     let body = tmpl.render_once().unwrap();
     HttpResponse::Ok().content_type("text/html").body(body)
 }
 
-async fn start_web_server(store_reference: Arc<Mutex<Store>>) -> std::io::Result<()> {
+async fn start_web_server(storage_actor: Addr<StorageActor>) -> std::io::Result<()> {
     let address = "0.0.0.0:8801";
 
     println!("xHummingbird web server started at {}", address);
 
     HttpServer::new(move ||
         App::new()
-            .data(WebState{store_reference: store_reference.clone()})
+            .data(WebState{storage_actor: storage_actor.clone()})
             .service(root)
             .service(events_root)
         ).bind(address)?
@@ -119,8 +126,8 @@ async fn start_web_server(store_reference: Arc<Mutex<Store>>) -> std::io::Result
          .await
 }
 
-fn start_receiver_thread(tx1: Sender<Event>, tx2: Sender<Event>) -> JoinHandle<Thread> {
-    thread::spawn(move || {
+fn start_receiver_thread(storage_actor_address: Addr<StorageActor>, tx2: Sender<Event>) -> tokio::task::JoinHandle<()> {
+    tokio::spawn(async move {
         let address = "tcp://*:8800";
         let context = zmq::Context::new();
         let subscriber = context.socket(zmq::PULL).unwrap();
@@ -132,7 +139,8 @@ fn start_receiver_thread(tx1: Sender<Event>, tx2: Sender<Event>) -> JoinHandle<T
             let bytes = subscriber.recv_bytes(0).unwrap();
             let event = Event::parse_from_bytes(&bytes).unwrap();
 
-            tx1.send(event.clone()).unwrap();
+            storage_actor_address.send(PutEvent{event: event.clone()}).await.unwrap();
+            // tx1.send(event.clone()).unwrap();
             tx2.send(event.clone()).unwrap();
         }
     })
@@ -171,8 +179,8 @@ fn start_notification_thread(rx: Receiver<Event>, slack: Slack) -> JoinHandle<Th
     })
 }
 
-fn start_control_thread(store_reference: Arc<Mutex<Store>>) -> JoinHandle<Thread> {
-    thread::spawn(move || {
+fn start_control_thread(storage_actor: Addr<StorageActor>) -> tokio::task::JoinHandle<()> {
+    tokio::spawn(async move {
         loop {
             let mut input = String::new();
 
@@ -183,8 +191,7 @@ fn start_control_thread(store_reference: Arc<Mutex<Store>>) -> JoinHandle<Thread
                     match &*input {
                         "head" => {
                             println!("Events:");
-                            let store = store_reference.lock().unwrap();
-                            for event in store.head() {
+                            for event in storage_actor.send(HeadEvents{}).await.unwrap().unwrap() {
                                 println!("{:?}", event);
                             }
                         },
@@ -222,4 +229,46 @@ impl Store {
     pub fn head(&self) -> Vec<&Event>{
         self.data.iter().rev().take(10).map(|t| t.1).collect()
     }
+}
+
+struct StorageActor{
+    store: Store
+}
+
+impl Actor for StorageActor{
+    type Context = Context<Self>;
+}
+
+impl Handler<PutEvent> for StorageActor {
+    type Result = std::result::Result<(), ()>;
+
+    fn handle(&mut self, msg: PutEvent, _ctx: &mut Context<Self>) -> Self::Result {
+        self.store.put(msg.event);
+        Ok(())
+    }
+}
+
+#[derive(Message)]
+#[rtype(result = "std::result::Result<(), ()>")]
+struct PutEvent{
+    event: Event
+}
+
+impl Handler<HeadEvents> for StorageActor {
+    type Result = std::result::Result<Vec<Event>, ()>;
+
+    fn handle(&mut self, _msg: HeadEvents, _ctx: &mut Context<Self>) -> Self::Result {
+        let mut events = Vec::new();
+
+        for event in self.store.head() {
+            events.push(event.clone());
+        }
+
+        Ok(events)
+    }
+}
+
+#[derive(Message)]
+#[rtype(result = "std::result::Result<(Vec<Event>), ()>")]
+struct HeadEvents{
 }

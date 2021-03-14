@@ -3006,6 +3006,7 @@ dependencies = [
  "protobuf-codegen-pure",
  "sailfish",
  "slack-hook",
+ "tokio 0.2.25",
  "zmq",
 ]
 
