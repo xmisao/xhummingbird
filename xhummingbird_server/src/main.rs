@@ -23,8 +23,10 @@ fn main() {
 
     let mut sys = actix::System::new("app");
 
-    // let slack_incoming_webhook_endpoint:&str = &env::var("XH_SLACK_INCOMING_WEBHOOK_ENDPOINT").unwrap();
-    // let slack = Slack::new(slack_incoming_webhook_endpoint).unwrap();
+    let slack_incoming_webhook_endpoint:&str = &env::var("XH_SLACK_INCOMING_WEBHOOK_ENDPOINT").unwrap();
+    let slack = Slack::new(slack_incoming_webhook_endpoint).unwrap();
+    let notification_actor = NotificationActor{slack};
+    let notification_actor_address= notification_actor.start();
 
     let store = Store::new();
     let storage_actor = StorageActor{store};
@@ -33,8 +35,8 @@ fn main() {
     // let control_reference = storage_actor_address.clone();
     let web_server_reference = storage_actor_address.clone();
 
-    let (tx2, rx2) = channel();
-    let receiver_thread = start_receiver_thread(storage_actor_address.clone(), tx2);
+    // let (tx2, rx2) = channel();
+    let receiver_thread = start_receiver_thread(storage_actor_address.clone(), notification_actor_address.clone());
 
     // let notification_thread = start_notification_thread(rx2, slack);
     // let control_thread = start_control_thread(control_reference);
@@ -124,7 +126,7 @@ async fn events_root(data: web::Data<WebState>) -> impl Responder {
     HttpResponse::Ok().content_type("text/html").body(body)
 }
 
-fn start_receiver_thread(storage_actor_address: Addr<StorageActor>, tx2: Sender<Event>){
+fn start_receiver_thread(storage_actor_address: Addr<StorageActor>, notification_actor_address: Addr<NotificationActor>){
     thread::spawn(move || {
         let address = "tcp://*:8800";
         let context = zmq::Context::new();
@@ -141,8 +143,7 @@ fn start_receiver_thread(storage_actor_address: Addr<StorageActor>, tx2: Sender<
             let storage_actor_address = storage_actor_address.clone();
 
             println!("{:?}", storage_actor_address.try_send(PutEvent{event: event.clone()}).unwrap());
-
-            // tx2.send(event.clone()).unwrap();
+            println!("{:?}", notification_actor_address.try_send(PutEvent{event: event.clone()}).unwrap());
         }
     });
 }
@@ -272,4 +273,36 @@ impl Handler<HeadEvents> for StorageActor {
 #[derive(Message)]
 #[rtype(result = "std::result::Result<(Vec<Event>), ()>")]
 struct HeadEvents{
+}
+
+struct NotificationActor{
+    slack: Slack
+}
+
+impl Actor for NotificationActor{
+    type Context = Context<Self>;
+}
+
+impl Handler<PutEvent> for NotificationActor {
+    type Result = std::result::Result<(), ()>;
+
+    fn handle(&mut self, msg: PutEvent, _ctx: &mut Context<Self>) -> Self::Result {
+        let event = msg.event;
+
+        let p = PayloadBuilder::new()
+            .text(format!("title: {}\nmessage: {}", event.get_title(), event.get_message()))
+            .username("xHummingbird")
+            .icon_emoji(":exclamation:")
+            .build()
+            .unwrap();
+
+        let res = self.slack.send(&p);
+
+        match res {
+            Ok(()) => (),
+            Err(x) => println!("Notification error: {:?}", x)
+        }
+
+        Ok(())
+    }
 }
