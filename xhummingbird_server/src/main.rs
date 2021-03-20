@@ -2,8 +2,6 @@ use std::collections::BTreeMap;
 use std::convert::TryInto;
 use std::env;
 use std::io;
-use std::sync::mpsc::{channel, Sender, Receiver};
-use std::sync::{Mutex, Arc};
 use std::thread::{Thread, JoinHandle};
 use std::thread;
 use std::time;
