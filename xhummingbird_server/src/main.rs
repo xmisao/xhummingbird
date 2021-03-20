@@ -42,11 +42,27 @@ fn main() {
     // let control_thread = start_control_thread(control_reference);
 
     let addr = storage_actor_address.clone();
-    actix::spawn( async move {
+
+    let control_actor = ControlActor{storage_actor_address: storage_actor_address.clone()};
+    let control_actor_address = control_actor.start();
+
+    /*
+    Arbiter::spawn( async move {
         loop {
             println!("worker output");
             println!("{:?}", addr.send(HeadEvents{}).await.unwrap());
             thread::sleep(time::Duration::from_millis(1000));
+        }
+    });
+    */
+
+    thread::spawn(move ||{
+        loop {
+            thread::sleep(time::Duration::from_millis(1000));
+
+            println!("worker output");
+
+            control_actor_address.try_send(CommandInput{command: "head".to_string()});
         }
     });
 
@@ -302,6 +318,48 @@ impl Handler<PutEvent> for NotificationActor {
             Ok(()) => (),
             Err(x) => println!("Notification error: {:?}", x)
         }
+
+        Ok(())
+    }
+}
+
+struct ControlActor{
+    storage_actor_address: Addr<StorageActor>
+}
+
+impl Actor for ControlActor{
+    type Context = Context<Self>;
+}
+
+#[derive(Message)]
+#[rtype(result = "std::result::Result<(), ()>")]
+struct CommandInput{
+    command: String
+}
+
+impl Handler<CommandInput> for ControlActor {
+    type Result = std::result::Result<(), ()>;
+
+    fn handle(&mut self, msg: CommandInput, _ctx: &mut Context<Self>) -> Self::Result {
+        let command = msg.command;
+        let storage_actor_address= self.storage_actor_address.clone();
+
+        actix::spawn(async move {
+            match &*command {
+                "head" => {
+                    println!("Events:");
+                    let s1 = storage_actor_address.send(HeadEvents{}).await.unwrap();
+                    println!("s1: {:?}", s1);
+
+                    for event in s1 {
+                        println!("{:?}", event);
+                    }
+                },
+                _ => {
+                    println!("Unknown command: {}", command);
+                }
+            }
+        });
 
         Ok(())
     }
