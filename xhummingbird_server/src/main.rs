@@ -140,9 +140,12 @@ fn start_receiver_thread(storage_actor_address: Addr<StorageActor>, tx2: Sender<
             let event = Event::parse_from_bytes(&bytes).unwrap();
             println!("{:?}", event);
 
-            let blk = async { storage_actor_address.send(PutEvent{event: event.clone()}).await.unwrap() };
-            // let _ = blk.await
+            let storage_actor_address = storage_actor_address.clone();
+            actix::spawn(async move {
+                println!("{:?}", storage_actor_address.send(PutEvent{event: event.clone()}).await.unwrap())
+            });
 
+            // let _ = blk.await
             // tx2.send(event.clone()).unwrap();
         }
     });
@@ -245,6 +248,7 @@ impl Handler<PutEvent> for StorageActor {
 
     fn handle(&mut self, msg: PutEvent, _ctx: &mut Context<Self>) -> Self::Result {
         self.store.put(msg.event);
+        println!("PutEvent Hundler {:?}", self.store.head());
         Ok(())
     }
 }
