@@ -32,39 +32,15 @@ fn main() {
     let storage_actor = StorageActor{store};
     let storage_actor_address = storage_actor.start();
 
-    // let control_reference = storage_actor_address.clone();
     let web_server_reference = storage_actor_address.clone();
 
-    // let (tx2, rx2) = channel();
     let receiver_thread = start_receiver_thread(storage_actor_address.clone(), notification_actor_address.clone());
-
-    // let notification_thread = start_notification_thread(rx2, slack);
-    // let control_thread = start_control_thread(control_reference);
 
     let addr = storage_actor_address.clone();
 
     let control_actor = ControlActor{storage_actor_address: storage_actor_address.clone()};
     let control_actor_address = control_actor.start();
-
-    /*
-    Arbiter::spawn( async move {
-        loop {
-            println!("worker output");
-            println!("{:?}", addr.send(HeadEvents{}).await.unwrap());
-            thread::sleep(time::Duration::from_millis(1000));
-        }
-    });
-    */
-
-    thread::spawn(move ||{
-        loop {
-            thread::sleep(time::Duration::from_millis(1000));
-
-            println!("worker output");
-
-            control_actor_address.try_send(CommandInput{command: "head".to_string()});
-        }
-    });
+    start_input_thread(control_actor_address);
 
     let address = "0.0.0.0:8801";
 
@@ -78,8 +54,6 @@ fn main() {
     println!("xHummingbird web server started at {}", address);
 
     sys.block_on(srv);
-
-    // notification_thread.join().unwrap();
 }
 
 #[derive(TemplateOnce)]
@@ -164,64 +138,20 @@ fn start_receiver_thread(storage_actor_address: Addr<StorageActor>, notification
     });
 }
 
-fn start_notification_thread(rx: Receiver<Event>, slack: Slack) -> JoinHandle<Thread> {
-    thread::spawn(move || {
-        loop {
-            let event = rx.recv().unwrap();
-
-            let p = PayloadBuilder::new()
-                .text(format!("title: {}\nmessage: {}", event.get_title(), event.get_message()))
-                .username("xHummingbird")
-                .icon_emoji(":exclamation:")
-                .build()
-                .unwrap();
-
-            let res = slack.send(&p);
-
-            match res {
-                Ok(()) => (),
-                Err(x) => println!("Notification error: {:?}", x)
-            }
-        }
-    })
-}
-
-fn start_control_thread(storage_actor: Addr<StorageActor>){
-    actix::spawn(async move {
+fn start_input_thread(control_actor_address: Addr<ControlActor>){
+    thread::spawn(move ||{
         loop {
             let mut input = String::new();
 
             match io::stdin().read_line(&mut input) {
                 Ok(_) => {
-                    let input = input.trim();
-
-                    match &*input {
-                        "head" => {
-                            println!("Events:");
-                            let s1 = storage_actor.send(HeadEvents{});
-                            println!("s1 done");
-                            let s2 = s1.await;
-                            println!("s2: {:?}", s2);
-                            let s3 = s2.unwrap();
-                            println!("s3: {:?}", s3);
-                            let s4 = s3.unwrap();
-                            println!("s4: {:?}", s4);
-
-                            // for event in storage_actor.send(HeadEvents{}).await.unwrap().unwrap() {
-                            for event in s4 {
-                                println!("{:?}", event);
-                            }
-                        },
-                        _ => {
-                            println!("Unknown command: {}", input);
-                        }
-
-                    }
+                    let command = input.trim().to_string();
+                    control_actor_address.try_send(CommandInput{command});
                 },
                 Err(error) => println!("Error: {}", error),
             }
-        };
-    })
+        }
+    });
 }
 
 struct Store {
