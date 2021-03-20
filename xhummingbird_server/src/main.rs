@@ -39,7 +39,6 @@ fn main() {
     // let notification_thread = start_notification_thread(rx2, slack);
     // let control_thread = start_control_thread(control_reference);
 
-
     let addr = storage_actor_address.clone();
     actix::spawn( async move {
         loop {
@@ -126,7 +125,6 @@ async fn events_root(data: web::Data<WebState>) -> impl Responder {
 }
 
 fn start_receiver_thread(storage_actor_address: Addr<StorageActor>, tx2: Sender<Event>){
-    // actix::spawn_blocking(async move {
     thread::spawn(move || {
         let address = "tcp://*:8800";
         let context = zmq::Context::new();
@@ -141,11 +139,9 @@ fn start_receiver_thread(storage_actor_address: Addr<StorageActor>, tx2: Sender<
             println!("{:?}", event);
 
             let storage_actor_address = storage_actor_address.clone();
-            actix::spawn(async move {
-                println!("{:?}", storage_actor_address.send(PutEvent{event: event.clone()}).await.unwrap())
-            });
 
-            // let _ = blk.await
+            println!("{:?}", storage_actor_address.try_send(PutEvent{event: event.clone()}).unwrap());
+
             // tx2.send(event.clone()).unwrap();
         }
     });
