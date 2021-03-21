@@ -30,8 +30,6 @@ fn main() {
     let storage_actor = StorageActor{store};
     let storage_actor_address = storage_actor.start();
 
-    let web_server_reference = storage_actor_address.clone();
-
     let receiver_thread = start_receiver_thread(storage_actor_address.clone(), notification_actor_address.clone());
 
     let addr = storage_actor_address.clone();
