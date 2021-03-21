@@ -6,54 +6,57 @@
     <link rel="icon" type="image/png" href="/static/img/favicon.png">
   </head>
   <body>
-    <div>
-      <img width="64px" height="64px" src="/static/img/logo.svg">
+    <div id="breadcrumb">
+      <img width="16px" height="16px" src="/static/img/logo.svg"> <a href="/">xHummingbird</a> &gt; Events
     </div>
-    <div>
-      <a href="/">Index</a> &gt; Events
-    </div>
-    <h1>Events</h1>
-    <div>
-      <% if from == None { %>
-      Showing the latest events.
-      <% } else { %>
-      <a href="/events">Show latest events.</a>
-      <% } %>
-    </div>
-    <table border="1">
-      <tr>
-        <th>Level</th>
-        <th>Title</th>
-        <th>Message</th>
-        <th>Trace</th>
-        <th>Tags</th>
-        <th>Timestamp</th>
-      </tr>
-      <% for event in events { %>
-      <tr>
-        <td><%= event.level %></td>
-        <td><%= event.title %></td>
-        <td><%= event.message %></td>
-        <td>
-          <% for t in event.trace { %>
-          <div><%= t %></div>
-          <% } %>
-        </td>
-        <td>
-          <% for (k, v) in event.tags { %>
-          <div><%= k %>:<%= v %></div>
-          <% } %>
-        </td>
-        <td><%= event.timestamp_rfc2822 %></td>
-      </tr>
-      <% } %>
-    </table>
-    <div>
-      <% if next_from == None { %>
-      There are no older events.
-      <% } else { %>
-      <a href="/events?from=<%= next_from.unwrap() %>">Show older events.</a>
-      <% } %>
+    <div id="main-pane">
+      <h1>Events</h1>
+      <div>
+        <% if from == None { %>
+        Showing the latest events.
+        <% } else { %>
+        <a href="/events">Show latest events.</a>
+        <% } %>
+      </div>
+      <table>
+        <tr>
+          <th>Level</th>
+          <th>Title</th>
+          <th>Message</th>
+          <th>Trace</th>
+          <th>Tags</th>
+          <th>Timestamp</th>
+        </tr>
+        <% if events.len() > 0 { %>
+        <% for event in events { %>
+        <tr>
+          <td><%= event.level %></td>
+          <td><%= event.title %></td>
+          <td><%= event.message %></td>
+          <td>
+            <% for t in event.trace { %>
+            <div><%= t %></div>
+            <% } %>
+          </td>
+          <td>
+            <% for (k, v) in event.tags { %>
+            <div><%= k %>:<%= v %></div>
+            <% } %>
+          </td>
+          <td><%= event.timestamp_rfc2822 %></td>
+        </tr>
+        <% } %>
+        <% } else { %>
+        <tr><td colspan="6" class="no-data">NO DATA</td></tr>
+        <% } %>
+      </table>
+      <div>
+        <% if next_from == None { %>
+        There are no older events.
+        <% } else { %>
+        <a href="/events?from=<%= next_from.unwrap() %>">Show older events.</a>
+        <% } %>
+      </div>
     </div>
   </body>
 </html>
