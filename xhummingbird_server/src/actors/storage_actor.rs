@@ -16,7 +16,7 @@ impl Handler<PutEvent> for StorageActor {
 
     fn handle(&mut self, msg: PutEvent, _ctx: &mut Context<Self>) -> Self::Result {
         self.store.put(msg.event);
-        println!("PutEvent Hundler {:?}", self.store.head());
+        println!("PutEvent Hundler {:?}", self.store.head(None));
         Ok(())
     }
 }
@@ -24,10 +24,10 @@ impl Handler<PutEvent> for StorageActor {
 impl Handler<HeadEvents> for StorageActor {
     type Result = std::result::Result<Vec<Event>, ()>;
 
-    fn handle(&mut self, _msg: HeadEvents, _ctx: &mut Context<Self>) -> Self::Result {
+    fn handle(&mut self, msg: HeadEvents, _ctx: &mut Context<Self>) -> Self::Result {
         let mut events = Vec::new();
 
-        for event in self.store.head() {
+        for event in self.store.head(msg.from) {
             events.push(event.clone());
         }
 

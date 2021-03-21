@@ -1,11 +1,13 @@
 use crate::actors::storage_actor::StorageActor;
 use crate::protos::event::Event;
 use crate::messages::HeadEvents;
+use crate::helper;
 
 use actix::prelude::*;
 use actix_web::{get, web, App, HttpServer, HttpResponse, Responder};
 use sailfish::TemplateOnce;
 use chrono::{Utc, TimeZone};
+use serde::{Deserialize};
 
 pub fn start(storage_actor_address: Addr<StorageActor>){
     let address = "0.0.0.0:8801";
@@ -32,13 +34,14 @@ struct DisplayableEvent {
     trace: Vec<String>,
     tags: Vec<(String, String)>,
     timestamp_rfc2822: String,
-
 }
 
 #[derive(TemplateOnce)]
 #[template(path = "events.html")]
 struct EventsTemplate {
-    events: Vec<DisplayableEvent>
+    events: Vec<DisplayableEvent>,
+    next_from: Option<u64>,
+    from: Option<u64>,
 }
 
 
@@ -71,11 +74,22 @@ async fn root() -> impl Responder {
 }
 
 #[get("/events")]
-async fn events_root(data: web::Data<WebState>) -> impl Responder {
+async fn events_root(info: web::Query<EventsInfo>, data: web::Data<WebState>) -> impl Responder {
     let storage_actor = &data.storage_actor;
-    let events:Vec<Event> = storage_actor.send(HeadEvents{}).await.unwrap().unwrap();
-    let events = events.iter().map(|event| DisplayableEvent::from_event(event)).collect();
-    let tmpl = EventsTemplate{events};
+    let events:Vec<Event> = storage_actor.send(HeadEvents{from: info.from}).await.unwrap().unwrap();
+    let displayable_events = events.iter().map(|event| DisplayableEvent::from_event(event)).collect();
+
+    let next_from: Option<u64> = match events.last() {
+        None => None,
+        Some(e) => Some(helper::timestamp_u64(e)),
+    };
+
+    let tmpl = EventsTemplate{events: displayable_events, next_from, from: info.from};
     let body = tmpl.render_once().unwrap();
     HttpResponse::Ok().content_type("text/html").body(body)
+}
+
+#[derive(Deserialize)]
+struct EventsInfo {
+    from: Option<u64>,
 }

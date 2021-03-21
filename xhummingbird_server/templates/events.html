@@ -7,6 +7,13 @@
       <a href="/">Index</a> &gt; Events
     </div>
     <h1>Events</h1>
+    <div>
+      <% if from == None { %>
+      Showing the latest events.
+      <% } else { %>
+      <a href="/events">Show latest events.</a>
+      <% } %>
+    </div>
     <table border="1">
       <tr>
         <th>Level</th>
@@ -35,5 +42,12 @@
       </tr>
       <% } %>
     </table>
+    <div>
+      <% if next_from == None { %>
+      There are no older events.
+      <% } else { %>
+      <a href="/events?from=<%= next_from.unwrap() %>">Show older events.</a>
+      <% } %>
+    </div>
   </body>
 </html>
