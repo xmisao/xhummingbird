@@ -6,7 +6,7 @@ use std::thread;
 use actix::prelude::*;
 use protobuf::Message;
 
-pub fn start_receiver_thread(storage_actor_address: Addr<StorageActor>, notification_actor_address: Addr<NotificationActor>){
+pub fn start(storage_actor_address: Addr<StorageActor>, notification_actor_address: Addr<NotificationActor>){
     thread::spawn(move || {
         let address = "tcp://*:8800";
         let context = zmq::Context::new();

@@ -1,7 +1,6 @@
 use crate::protos::event::Event;
 use std::collections::BTreeMap;
 use std::convert::TryInto;
-use std::time;
 
 pub struct Store {
     data: BTreeMap<u64, Event>
