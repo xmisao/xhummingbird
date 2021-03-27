@@ -11,7 +11,7 @@ require_relative "xhummingbird/protos/event_pb"
 module Xhummingbird
   class Error < StandardError; end
 
-  def self.send_trace(title:, message: "", level: 1)
+  def self.send_trace(title:, message: "", level: 1, tags: {})
     return unless enabled?
 
     send(
@@ -19,14 +19,14 @@ module Xhummingbird
       title: title.to_s,
       message: message.to_s,
       trace: caller,
-      tags: default_tags,
+      tags: default_tags.merge(format_hash(tags)),
       timestamp: Time.now
     )
   rescue
     raise Error
   end
 
-  def self.send_exception(exception, level: 2)
+  def self.send_exception(exception, level: 2, tags: {})
     return unless enabled?
 
     send(
@@ -34,7 +34,7 @@ module Xhummingbird
       title: exception.class.name,
       message: exception.message,
       trace: exception.backtrace,
-      tags: default_tags,
+      tags: default_tags.merge(format_hash(tags)),
       timestamp: Time.now
     )
   rescue
@@ -66,5 +66,15 @@ module Xhummingbird
     event = Event.new(**args)
     message = Event.encode(event)
     Client.instance.send(message)
+  end
+
+  def self.format_hash(hash)
+    formatted = {}
+
+    hash.each do |k, v|
+      formatted[k.to_s] = v.to_s
+    end
+
+    formatted
   end
 end

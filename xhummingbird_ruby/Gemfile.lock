@@ -1,7 +1,7 @@
 PATH
   remote: .
   specs:
-    xhummingbird (0.1.0)
+    xhummingbird (0.1.1)
       ffi-rzmq
       google-protobuf
 
@@ -14,7 +14,7 @@ GEM
       ffi-rzmq-core (>= 1.0.7)
     ffi-rzmq-core (1.0.7)
       ffi
-    google-protobuf (3.15.5-x86_64-linux)
+    google-protobuf (3.15.6-x86_64-linux)
     minitest (5.14.4)
     parallel (1.20.1)
     parser (3.0.0.0)
