@@ -55,10 +55,11 @@ module Xhummingbird
 
   def self.default_tags
     {
-       hostname: Socket.gethostname,
-       ruby_version: RUBY_VERSION,
-       pid: Process.pid.to_s,
-       thread_object_id: Thread.current.object_id.to_s
+      "default/sdk" => "Ruby #{Xhummingbird::VERSION}",
+      "default/hostname" =>  Socket.gethostname,
+      "default/ruby_version" =>  RUBY_VERSION,
+      "default/pid" =>  Process.pid.to_s,
+      "default/thread_object_id" => Thread.current.object_id.to_s
     }
   end
 
