@@ -3,6 +3,8 @@ require 'xhummingbird/short_name'
 
 raise "Set #{XH::Client::XH_SERVER} environment variable" unless XH.enabled?
 
+XH.start
+
 XH.send_trace(title: "ShortNameTrace", message: "Send trace from short name reference")
 
 begin

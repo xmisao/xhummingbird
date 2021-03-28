@@ -3,6 +3,8 @@
 require 'singleton'
 require 'ffi-rzmq'
 require 'socket'
+require 'logger'
+require 'set'
 
 require_relative "xhummingbird/version"
 require_relative "xhummingbird/client"
@@ -11,7 +13,23 @@ require_relative "xhummingbird/protos/event_pb"
 module Xhummingbird
   class Error < StandardError; end
 
+  LOGGER = Logger.new(STDERR)
+
+  def self.debug(*args)
+    LOGGER.debug(*args) if ENV['XH_DEBUG']
+  end
+
+  def self.start
+    debug(__method__)
+
+    Client.instance.start
+
+    send_trace(title: "Started", message: "Xhummingbird Ruby SDK started.", level: 0)
+  end
+
   def self.send_trace(title:, message: "", level: 1, tags: {})
+    debug(__method__)
+
     return unless enabled?
 
     send(
@@ -22,11 +40,13 @@ module Xhummingbird
       tags: default_tags.merge(format_hash(tags)),
       timestamp: Time.now
     )
-  rescue
-    raise Error
+  rescue => e
+    debug(e)
   end
 
   def self.send_exception(exception, level: 2, tags: {})
+    debug(__method__)
+
     return unless enabled?
 
     send(
@@ -37,23 +57,29 @@ module Xhummingbird
       tags: default_tags.merge(format_hash(tags)),
       timestamp: Time.now
     )
-  rescue
-    raise Error
+  rescue => e
+    debug(e)
   end
 
   def self.send_event(**args)
+    debug(__method__)
+
     return unless enabled?
 
     send(**args)
-  rescue
-    raise Error
+  rescue => e
+    debug(e)
   end
 
   def self.enabled?
+    debug(__method__)
+
     Client.instance.enabled?
   end
 
   def self.default_tags
+    debug(__method__)
+
     {
       "default/sdk" => "Ruby #{Xhummingbird::VERSION}",
       "default/hostname" =>  Socket.gethostname,
@@ -64,12 +90,16 @@ module Xhummingbird
   end
 
   def self.send(**args)
+    debug(__method__)
+
     event = Event.new(**args)
     message = Event.encode(event)
     Client.instance.send(message)
   end
 
   def self.format_hash(hash)
+    debug(__method__)
+
     formatted = {}
 
     hash.each do |k, v|

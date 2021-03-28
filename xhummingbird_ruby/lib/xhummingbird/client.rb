@@ -5,41 +5,48 @@ module Xhummingbird
     XH_SERVER = 'XH_SERVER'
 
     def initialize
-      @mutex = Mutex.new
+      @pid = nil
+      @socket = nil
+      @active = false
     end
 
     def send(message)
-      socket.send_string(message)
+      if active?
+        @socket.send_string(message)
+      else
+        Xhummingbird.debug("Xhummingbird not started.")
+      end
     end
 
     def enabled?
-      @setup ||= !!address
+      @enabled ||= !!address
+    end
+
+    def start
+      ctx = ZMQ::Context.new
+      socket = ctx.socket(ZMQ::PUSH)
+      socket.connect(address)
+      @socket = socket
+      Xhummingbird.debug("Socket created (pid: #{$$})")
+
+      at_exit do
+        Xhummingbird.debug("at_exit started.")
+        @socket.close
+        Xhummingbird.debug("at_exit stopped.")
+      end
+
+      @pid = $$
+      @active = true
     end
 
     private
 
-    def socket
-      return @socket if defined?(@socket) && @pid == Process.pid
-
-      @socket = init_socket
-    end
-
-    def init_socket
-      @mutex.synchronize do
-        return @socket if defined?(@socket) && @pid == Process.pid
-
-        @pid = Process.pid
-
-        ctx = ZMQ::Context.new
-        socket = ctx.socket(ZMQ::PUSH)
-        socket.connect(address)
-
-        @socket = socket
-      end
-    end
-
     def address
       ENV[XH_SERVER]
+    end
+
+    def active?
+      @pid == $$ && @socket && @active
     end
   end
 end

@@ -2,6 +2,8 @@ require 'xhummingbird'
 
 raise "Set #{Xhummingbird::Client::XH_SERVER} environment variable" unless Xhummingbird.enabled?
 
+Xhummingbird.start
+
 begin
   raise 'Something wrong'
 rescue => e

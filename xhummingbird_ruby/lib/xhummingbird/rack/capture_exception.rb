@@ -43,7 +43,11 @@ module Xhummingbird
 
         env.each do |k, v|
           if CONVERT_KEYS.include?(k) || k.start_with?(HTTP_HEADER_PREFIX)
-            tags["rack_env/" +  k.to_s] = v.to_s rescue nil
+            begin
+              tags["rack_env/" +  k.to_s] = v.to_s
+            rescue => e
+              Xhummingbird.debug(e)
+            end
           end
         end
 
