@@ -44,4 +44,8 @@ impl Store {
 
         events
     }
+
+    pub fn get(&self, id: u64) -> Option<&Event>{
+        self.data.get(&id)
+    }
 }

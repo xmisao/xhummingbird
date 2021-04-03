@@ -19,3 +19,9 @@ pub struct HeadEvents{
 pub struct CommandInput{
     pub command: String
 }
+
+#[derive(Message)]
+#[rtype(result = "std::result::Result<(Event), ()>")]
+pub struct GetEvent{
+    pub id: u64,
+}

@@ -1,0 +1,35 @@
+<html>
+  <head>
+    <title>xHummingbird</title>
+    <link rel="stylesheet" href="/static/css/normalize.css">
+    <link rel="stylesheet" href="/static/css/theme.css">
+    <link rel="icon" type="image/png" href="/static/img/favicon.png">
+  </head>
+  <body>
+    <div id="breadcrumb">
+      <img width="16px" height="16px" src="/static/img/logo.svg"> <a href="/">xHummingbird</a> &gt; <a href="/events">Events</a> &gt; <%= id %>
+    </div>
+    <div id="main-pane">
+      <h1>Event detail</h1>
+      <div>
+        <table>
+          <tr><th>Id</th><td><%= event.id %></td></tr>
+          <tr><th>Level</th><td><%= event.level %></td></tr>
+          <tr><th>Title</th><td><a href="<%= event.events_link() %>"><%= event.title %></a></td></tr>
+          <tr><th>Message</th><td><%= event.message %></td></tr>
+          <tr><th>Trace</th><td>
+            <% for t in event.trace { %>
+            <div><%= t %></div>
+            <% } %>
+          </td></tr>
+          <tr><th>Tags</th><td>
+            <% for (k, v) in event.tags { %>
+            <div><%= k %>:<%= v %></div>
+            <% } %>
+          </td></tr>
+          <tr><th>Timestamp</th><td><%= event.timestamp_rfc2822 %></tr></tr>
+        </table>
+      </div>
+    </div>
+  </body>
+</html>

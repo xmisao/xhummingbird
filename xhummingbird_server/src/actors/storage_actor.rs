@@ -1,4 +1,4 @@
-use crate::messages::{PutEvent, HeadEvents};
+use crate::messages::{PutEvent, HeadEvents, GetEvent};
 use crate::protos::event::Event;
 use crate::store::Store;
 use actix::prelude::*;
@@ -31,5 +31,16 @@ impl Handler<HeadEvents> for StorageActor {
         }
 
         Ok(events)
+    }
+}
+
+impl Handler<GetEvent> for StorageActor {
+    type Result = std::result::Result<Event, ()>;
+
+    fn handle(&mut self, msg: GetEvent, _ctx: &mut Context<Self>) -> Self::Result {
+        match self.store.get(msg.id) {
+            Some(event) => Ok(event.clone()),
+            None => Err(())
+        }
     }
 }

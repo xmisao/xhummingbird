@@ -25,34 +25,24 @@
       <% } %>
       <table>
         <tr>
+          <th>Id</th>
           <th>Level</th>
           <th>Title</th>
           <th>Message</th>
-          <th>Trace</th>
-          <th>Tags</th>
           <th>Timestamp</th>
         </tr>
         <% if events.len() > 0 { %>
         <% for event in events { %>
         <tr>
+          <td><a href="<%= event.event_link() %>"><%= event.id %></a></td>
           <td><%= event.level %></td>
           <td><a href="<%= event.events_link() %>"><%= event.title %></a></td>
           <td><%= event.message %></td>
-          <td>
-            <% for t in event.trace { %>
-            <div><%= t %></div>
-            <% } %>
-          </td>
-          <td>
-            <% for (k, v) in event.tags { %>
-            <div><%= k %>:<%= v %></div>
-            <% } %>
-          </td>
           <td><%= event.timestamp_rfc2822 %></td>
         </tr>
         <% } %>
         <% } else { %>
-        <tr><td colspan="6" class="no-data">NO DATA</td></tr>
+        <tr><td colspan="5" class="no-data">NO DATA</td></tr>
         <% } %>
       </table>
       <div>

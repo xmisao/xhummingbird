@@ -1,6 +1,6 @@
 use crate::actors::storage_actor::StorageActor;
 use crate::protos::event::Event;
-use crate::messages::HeadEvents;
+use crate::messages::{HeadEvents, GetEvent};
 use crate::helper;
 
 use actix::prelude::*;
@@ -17,6 +17,7 @@ pub fn start(storage_actor_address: Addr<StorageActor>){
                     .data(WebState{storage_actor: storage_actor_address.clone()})
                     .service(root)
                     .service(events_root)
+                    .service(event_item)
                     .service(actix_files::Files::new("/static", "./static"))
                    ).bind(address).unwrap().run();
 
@@ -29,6 +30,7 @@ struct RootTemplate {
 }
 
 struct DisplayableEvent {
+    id: u64,
     level: u32,
     title: String,
     message: String,
@@ -49,11 +51,13 @@ struct EventsTemplate {
 
 impl DisplayableEvent {
     pub fn from_event(event: &Event) -> DisplayableEvent{
+        let id = helper::timestamp_u64(event);
         let timestamp = event.get_timestamp();
         let utc = Utc.timestamp(timestamp.get_seconds(), 0);
         let timestamp_rfc2822 = utc.to_rfc2822();
 
         DisplayableEvent{
+            id,
             level: event.get_level(),
             title: event.get_title().to_string(),
             message: event.get_message().to_string(),
@@ -68,6 +72,10 @@ impl DisplayableEvent {
         encoded.append_pair("title", &self.title);
 
         format!("/events?{}", encoded.finish())
+    }
+
+    pub fn event_link(&self) -> String{
+        format!("/events/{}", self.id)
     }
 }
 
@@ -114,4 +122,39 @@ async fn events_root(info: web::Query<EventsInfo>, data: web::Data<WebState>) ->
 struct EventsInfo {
     from: Option<u64>,
     title: Option<String>,
+}
+
+#[get("/events/{id}")]
+async fn event_item(web::Path((id)): web::Path<(u64)>, data: web::Data<WebState>) -> impl Responder {
+    let storage_actor = &data.storage_actor;
+    let result = storage_actor.send(GetEvent{id}).await.unwrap();
+
+    match result {
+        Ok(event) => {
+            let displayable_event = DisplayableEvent::from_event(&event);
+
+            let tmpl = EventTemplate{id: id, event: displayable_event};
+
+            let body = tmpl.render_once().unwrap();
+            HttpResponse::Ok().content_type("text/html").body(body)
+        },
+        Err(_) => {
+            let tmpl = NotFoundTemplate{message: format!("Unknown event id:{}", id)};
+            let body = tmpl.render_once().unwrap();
+            HttpResponse::NotFound().content_type("text/html").body(body)
+        }
+    }
+}
+
+#[derive(TemplateOnce)]
+#[template(path = "event.html")]
+struct EventTemplate {
+    id: u64,
+    event: DisplayableEvent,
+}
+
+#[derive(TemplateOnce)]
+#[template(path = "not_found.html")]
+struct NotFoundTemplate {
+    message: String,
 }
