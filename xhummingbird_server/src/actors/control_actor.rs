@@ -21,7 +21,7 @@ impl Handler<CommandInput> for ControlActor {
             match &*command {
                 "head" => {
                     println!("Events:");
-                    let s1 = storage_actor_address.send(HeadEvents{from: None}).await.unwrap();
+                    let s1 = storage_actor_address.send(HeadEvents{from: None, title: None}).await.unwrap();
                     println!("s1: {:?}", s1);
 
                     for event in s1 {

@@ -18,6 +18,11 @@
         <a href="/events">Show latest events.</a>
         <% } %>
       </div>
+      <% if title != None { %>
+      <div>
+        Filter: title = '<%= title.unwrap() %>'
+      </div>
+      <% } %>
       <table>
         <tr>
           <th>Level</th>
@@ -31,7 +36,7 @@
         <% for event in events { %>
         <tr>
           <td><%= event.level %></td>
-          <td><%= event.title %></td>
+          <td><a href="<%= event.events_link() %>"><%= event.title %></a></td>
           <td><%= event.message %></td>
           <td>
             <% for t in event.trace { %>
@@ -51,10 +56,10 @@
         <% } %>
       </table>
       <div>
-        <% if next_from == None { %>
+        <% if next_link == None { %>
         There are no older events.
         <% } else { %>
-        <a href="/events?from=<%= next_from.unwrap() %>">Show older events.</a>
+        <a href="<%= next_link.unwrap() %>">Show older events.</a>
         <% } %>
       </div>
     </div>

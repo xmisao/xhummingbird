@@ -41,8 +41,9 @@ struct DisplayableEvent {
 #[template(path = "events.html")]
 struct EventsTemplate {
     events: Vec<DisplayableEvent>,
-    next_from: Option<u64>,
+    next_link: Option<String>,
     from: Option<u64>,
+    title: Option<String>,
 }
 
 
@@ -61,6 +62,10 @@ impl DisplayableEvent {
             timestamp_rfc2822,
         }
     }
+
+    pub fn events_link(&self) -> String{
+        format!("/events?title={}", self.title)
+    }
 }
 
 struct WebState {
@@ -77,15 +82,24 @@ async fn root() -> impl Responder {
 #[get("/events")]
 async fn events_root(info: web::Query<EventsInfo>, data: web::Data<WebState>) -> impl Responder {
     let storage_actor = &data.storage_actor;
-    let events:Vec<Event> = storage_actor.send(HeadEvents{from: info.from}).await.unwrap().unwrap();
+    let events:Vec<Event> = storage_actor.send(HeadEvents{from: info.from, title: info.title.clone()}).await.unwrap().unwrap();
     let displayable_events = events.iter().map(|event| DisplayableEvent::from_event(event)).collect();
 
-    let next_from: Option<u64> = match events.last() {
-        None => None,
-        Some(e) => Some(helper::timestamp_u64(e)),
-    };
+    let mut next_link:Option<String> = None;
 
-    let tmpl = EventsTemplate{events: displayable_events, next_from, from: info.from};
+    let last_event = events.last();
+
+    if last_event != None {
+        let next_from = helper::timestamp_u64(last_event.unwrap());
+
+        if info.title == None {
+            next_link = Some(format!("/events?from={}", next_from));
+        } else {
+            next_link = Some(format!("/events?from={}&title={}", next_from, info.title.clone().unwrap()));
+        }
+    }
+
+    let tmpl = EventsTemplate{events: displayable_events, next_link, from: info.from, title: info.title.clone()};
     let body = tmpl.render_once().unwrap();
     HttpResponse::Ok().content_type("text/html").body(body)
 }
@@ -93,4 +107,5 @@ async fn events_root(info: web::Query<EventsInfo>, data: web::Data<WebState>) ->
 #[derive(Deserialize)]
 struct EventsInfo {
     from: Option<u64>,
+    title: Option<String>,
 }

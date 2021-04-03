@@ -10,7 +10,8 @@ pub struct PutEvent{
 #[derive(Message)]
 #[rtype(result = "std::result::Result<(Vec<Event>), ()>")]
 pub struct HeadEvents{
-    pub from: Option<u64>
+    pub from: Option<u64>,
+    pub title: Option<String>,
 }
 
 #[derive(Message)]
