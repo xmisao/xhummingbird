@@ -64,7 +64,10 @@ impl DisplayableEvent {
     }
 
     pub fn events_link(&self) -> String{
-        format!("/events?title={}", self.title)
+        let mut encoded = form_urlencoded::Serializer::new(String::new());
+        encoded.append_pair("title", &self.title);
+
+        format!("/events?{}", encoded.finish())
     }
 }
 
@@ -90,13 +93,16 @@ async fn events_root(info: web::Query<EventsInfo>, data: web::Data<WebState>) ->
     let last_event = events.last();
 
     if last_event != None {
-        let next_from = helper::timestamp_u64(last_event.unwrap());
+        let mut encoded = form_urlencoded::Serializer::new(String::new());
 
-        if info.title == None {
-            next_link = Some(format!("/events?from={}", next_from));
-        } else {
-            next_link = Some(format!("/events?from={}&title={}", next_from, info.title.clone().unwrap()));
+        let next_from = helper::timestamp_u64(last_event.unwrap());
+        encoded.append_pair("from", &format!("{}", next_from));
+
+        if info.title != None {
+            encoded.append_pair("title", &info.title.clone().unwrap());
         }
+
+        next_link = Some(format!("/events?{}", encoded.finish()));
     }
 
     let tmpl = EventsTemplate{events: displayable_events, next_link, from: info.from, title: info.title.clone()};
