@@ -1,6 +1,7 @@
 use crate::messages::{CommandInput, HeadEvents};
 use crate::actors::storage_actor::StorageActor;
 use actix::prelude::*;
+use crate::loader;
 
 pub struct ControlActor{
     pub storage_actor_address: Addr<StorageActor>
@@ -27,6 +28,9 @@ impl Handler<CommandInput> for ControlActor {
                     for event in s1 {
                         println!("{:?}", event);
                     }
+                },
+                "load" => {
+                    loader::start(storage_actor_address.clone());
                 },
                 _ => {
                     println!("Unknown command: {}", command);
