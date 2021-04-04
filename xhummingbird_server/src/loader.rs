@@ -8,6 +8,7 @@ use std::io::{self, Read, Write, BufReader};
 use std::convert::TryFrom;
 use std::thread;
 use std::env;
+use std::path::Path;
 
 pub fn start(storage_actor_address: Addr<StorageActor>) {
     thread::spawn(move || {
@@ -17,28 +18,32 @@ pub fn start(storage_actor_address: Addr<StorageActor>) {
 }
 
 fn load_from_file(path:&str, storage_actor_address: Addr<StorageActor>) -> Result<usize, io::Error> {
-    let mut size_buf = [0; 4]; // NOTE: u32
-    let mut reader = BufReader::new(File::open(path)?);
-    let mut n = 0;
+    if Path::new(path).exists() {
+        let mut size_buf = [0; 4]; // NOTE: u32
+        let mut reader = BufReader::new(File::open(path)?);
+        let mut n = 0;
 
-    loop {
-        reader.read_exact(&mut size_buf)?;
+        loop {
+            reader.read_exact(&mut size_buf)?;
 
-        let size:usize = TryFrom::try_from(u32::from_ne_bytes(size_buf)).unwrap();
+            let size:usize = TryFrom::try_from(u32::from_ne_bytes(size_buf)).unwrap();
 
-        if size == 0 {
-            break;
+            if size == 0 {
+                break;
+            }
+
+            let mut event_buf = vec![0; size];
+            reader.read_exact(&mut event_buf)?;
+
+            let event = Event::parse_from_bytes(&event_buf)?;
+            storage_actor_address.try_send(PutEvent{event: event.clone()}).ok();
+
+            n += 1;
         }
 
-        let mut event_buf = vec![0; size];
-        reader.read_exact(&mut event_buf)?;
-
-        let event = Event::parse_from_bytes(&event_buf)?;
-        println!("Loaded: {:?}", event);
-        storage_actor_address.try_send(PutEvent{event: event.clone()}).ok();
-
-        n += 1;
+        Ok(n)
+    } else {
+        println!("{} does not exist.", path);
+        Ok(0)
     }
-
-    Ok(n)
 }
