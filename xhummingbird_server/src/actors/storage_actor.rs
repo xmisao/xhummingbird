@@ -1,7 +1,9 @@
-use crate::messages::{PutEvent, HeadEvents, GetEvent};
+use crate::messages::{PutEvent, HeadEvents, GetEvent, SaveSnapshot};
 use crate::protos::event::Event;
 use crate::store::Store;
 use actix::prelude::*;
+use protobuf::Message;
+use std::env;
 
 pub struct StorageActor{
     pub store: Store
@@ -42,5 +44,21 @@ impl Handler<GetEvent> for StorageActor {
             Some(event) => Ok(event.clone()),
             None => Err(())
         }
+    }
+}
+
+impl Handler<SaveSnapshot> for StorageActor {
+    type Result = std::result::Result<usize, std::io::Error>;
+
+    fn handle(&mut self, msg: SaveSnapshot, _ctx: &mut Context<Self>) -> Self::Result {
+        let path = &env::var("XH_SNAPSHOT").unwrap();
+        let result = self.store.save(path);
+
+        match &result {
+            Ok(n) => println!("{} events saved.", n),
+            Err(e) => println!("Save failed {:?}", e),
+        };
+        
+        result
     }
 }

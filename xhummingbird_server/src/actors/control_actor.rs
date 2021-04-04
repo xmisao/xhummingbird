@@ -1,4 +1,4 @@
-use crate::messages::{CommandInput, HeadEvents};
+use crate::messages::{CommandInput, HeadEvents, SaveSnapshot};
 use crate::actors::storage_actor::StorageActor;
 use actix::prelude::*;
 use crate::loader;
@@ -32,6 +32,9 @@ impl Handler<CommandInput> for ControlActor {
                 "load" => {
                     loader::start(storage_actor_address.clone());
                 },
+                "save" => {
+                    storage_actor_address.try_send(SaveSnapshot{}).ok();
+                }
                 _ => {
                     println!("Unknown command: {}", command);
                 }

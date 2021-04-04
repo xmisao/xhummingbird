@@ -25,3 +25,8 @@ pub struct CommandInput{
 pub struct GetEvent{
     pub id: u64,
 }
+
+#[derive(Message)]
+#[rtype(result = "std::result::Result<usize, std::io::Error>")]
+pub struct SaveSnapshot{
+}
