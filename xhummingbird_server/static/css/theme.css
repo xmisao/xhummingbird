@@ -59,3 +59,7 @@ h1 {
 td.no-data {
   text-align: center;
 }
+
+canvas {
+  max-width: 90%;
+}

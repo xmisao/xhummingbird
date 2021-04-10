@@ -5,6 +5,8 @@ use protobuf::Message;
 use std::convert::TryFrom;
 use std::fs::File;
 use std::io::{self, Write, BufWriter};
+use chrono::{Utc, TimeZone, Duration};
+use std::convert::TryInto;
 
 pub struct Store {
     data: BTreeMap<u64, Event>
@@ -47,6 +49,35 @@ impl Store {
         }
 
         events
+    }
+
+    pub fn stat(&self, title: Option<String>) -> Vec<u64>{
+        let from_dt = chrono::Utc::now().checked_sub_signed(Duration::hours(168)).unwrap();
+        let sec:u64 = from_dt.timestamp().try_into().unwrap();
+        let nsec:u64 = from_dt.timestamp_subsec_nanos().try_into().unwrap();
+        let from:u64 = sec * 1_000_000_000 + nsec;
+
+        let iter = self.data.range(from..).rev();
+
+        let mut stat = Vec::new();
+        for _ in 0..168 {
+            stat.push(0);
+        }
+
+        for event in iter {
+            let event = event.1;
+
+            if title == None || event.title == title.as_deref().unwrap() {
+                let event_time = helper::timestamp_u64(event);
+
+                let event_timestamp = helper::timestamp_u64(event);
+                let index = (event_timestamp - from) / (60 * 60 * 1_000_000_000);
+
+                stat[index as usize] += 1;
+            }
+        }
+
+        stat
     }
 
     pub fn get(&self, id: u64) -> Option<&Event>{

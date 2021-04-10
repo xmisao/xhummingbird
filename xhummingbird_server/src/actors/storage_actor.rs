@@ -1,4 +1,4 @@
-use crate::messages::{PutEvent, HeadEvents, GetEvent, SaveSnapshot};
+use crate::messages::{PutEvent, HeadEvents, GetEvent, SaveSnapshot, StatEvents};
 use crate::protos::event::Event;
 use crate::store::Store;
 use actix::prelude::*;
@@ -60,5 +60,15 @@ impl Handler<SaveSnapshot> for StorageActor {
         };
         
         result
+    }
+}
+
+impl Handler<StatEvents> for StorageActor {
+    type Result = std::result::Result<Vec<u64>, ()>;
+
+    fn handle(&mut self, msg: StatEvents, _ctx: &mut Context<Self>) -> Self::Result {
+        let stat = self.store.stat(msg.title);
+
+        Ok(stat)
     }
 }

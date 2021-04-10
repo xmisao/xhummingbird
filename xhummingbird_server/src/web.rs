@@ -1,6 +1,6 @@
 use crate::actors::storage_actor::StorageActor;
 use crate::protos::event::Event;
-use crate::messages::{HeadEvents, GetEvent};
+use crate::messages::{HeadEvents, GetEvent, StatEvents};
 use crate::helper;
 
 use actix::prelude::*;
@@ -8,6 +8,8 @@ use actix_web::{get, web, App, HttpServer, HttpResponse, Responder};
 use sailfish::TemplateOnce;
 use chrono::{Utc, TimeZone};
 use serde::{Deserialize};
+
+use serde_json::json;
 
 pub fn start(storage_actor_address: Addr<StorageActor>){
     let address = "0.0.0.0:8801";
@@ -46,6 +48,7 @@ struct EventsTemplate {
     next_link: Option<String>,
     from: Option<u64>,
     title: Option<String>,
+    stat_array: String,
 }
 
 
@@ -113,7 +116,13 @@ async fn events_root(info: web::Query<EventsInfo>, data: web::Data<WebState>) ->
         next_link = Some(format!("/events?{}", encoded.finish()));
     }
 
-    let tmpl = EventsTemplate{events: displayable_events, next_link, from: info.from, title: info.title.clone()};
+    let stat:Vec<u64> = storage_actor.send(StatEvents{title: info.title.clone()}).await.unwrap().unwrap();
+
+    let json_stat = json!(stat);
+
+    let stat_array = json_stat.to_string();
+
+    let tmpl = EventsTemplate{events: displayable_events, next_link, from: info.from, title: info.title.clone(), stat_array};
     let body = tmpl.render_once().unwrap();
     HttpResponse::Ok().content_type("text/html").body(body)
 }

@@ -2611,6 +2611,7 @@ dependencies = [
  "sailfish",
  "serde",
  "serde_derive",
+ "serde_json",
  "tokio 0.2.25",
  "zmq",
 ]

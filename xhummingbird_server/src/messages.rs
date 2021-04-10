@@ -30,3 +30,9 @@ pub struct GetEvent{
 #[rtype(result = "std::result::Result<usize, std::io::Error>")]
 pub struct SaveSnapshot{
 }
+
+#[derive(Message)]
+#[rtype(result = "std::result::Result<(Vec<u64>), ()>")]
+pub struct StatEvents{
+    pub title: Option<String>,
+}

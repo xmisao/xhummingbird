@@ -1,4 +1,4 @@
-use crate::messages::{CommandInput, HeadEvents, SaveSnapshot};
+use crate::messages::{CommandInput, HeadEvents, SaveSnapshot, StatEvents};
 use crate::actors::storage_actor::StorageActor;
 use actix::prelude::*;
 use crate::loader;
@@ -28,6 +28,11 @@ impl Handler<CommandInput> for ControlActor {
                     for event in s1 {
                         println!("{:?}", event);
                     }
+                },
+                "stat" => {
+                    println!("Stat:");
+                    let stat = storage_actor_address.send(StatEvents{title: None}).await.unwrap();
+                    println!("{:?}", stat);
                 },
                 "load" => {
                     loader::start(storage_actor_address.clone());

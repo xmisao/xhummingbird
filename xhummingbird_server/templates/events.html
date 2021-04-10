@@ -11,6 +11,7 @@
     </div>
     <div id="main-pane">
       <h1>Events</h1>
+      <canvas id="frequency-chart" width="400" height="40"></canvas>
       <div>
         <% if from == None { %>
         Showing the latest events.
@@ -53,5 +54,10 @@
         <% } %>
       </div>
     </div>
+    <script crossorigin src="https://cdn.jsdelivr.net/npm/chart.js@3.0.2/dist/chart.min.js"></script>
+    <script>
+      var data = <%= stat_array %>;
+    </script>
+    <script src="/static/js/frequency-chart.js"></script>
   </body>
 </html>
