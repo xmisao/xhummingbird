@@ -17,7 +17,12 @@ fn main() {
     let sys = actix::System::new("app");
 
     let slack_incoming_webhook_endpoint = env::var("XH_SLACK_INCOMING_WEBHOOK_ENDPOINT").unwrap().to_string();
-    let notification_actor = NotificationActor{slack_incoming_webhook_endpoint};
+    let default_notification_threshold = "0".to_string();
+    let notification_threshold = env::var("XH_NOTIFICATION_THRESHOLD").unwrap_or(default_notification_threshold).parse::<u32>().unwrap();
+
+    println!("Notify Slack when receiving an event that has a level greater equal than {}", notification_threshold);
+
+    let notification_actor = NotificationActor{slack_incoming_webhook_endpoint, notification_threshold};
     let notification_actor_address= notification_actor.start();
 
     let store = Store::new();
