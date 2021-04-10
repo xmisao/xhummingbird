@@ -12,15 +12,12 @@ use std::time::Duration;
 use std::thread;
 
 use actix::prelude::*;
-extern crate slack_hook;
-use slack_hook::Slack;
 
 fn main() {
     let sys = actix::System::new("app");
 
-    let slack_incoming_webhook_endpoint:&str = &env::var("XH_SLACK_INCOMING_WEBHOOK_ENDPOINT").unwrap();
-    let slack = Slack::new(slack_incoming_webhook_endpoint).unwrap();
-    let notification_actor = NotificationActor{slack};
+    let slack_incoming_webhook_endpoint = env::var("XH_SLACK_INCOMING_WEBHOOK_ENDPOINT").unwrap().to_string();
+    let notification_actor = NotificationActor{slack_incoming_webhook_endpoint};
     let notification_actor_address= notification_actor.start();
 
     let store = Store::new();
