@@ -31,7 +31,11 @@ module Xhummingbird
 
         error = env['rack.exception'] || env['sinatra.error']
 
-        Xhummingbird.send_exception(error, tags: convert_to_rack_tags(env)) if error
+        if error
+          level = (400..499).include?(response.first.to_i) ? 0 : 2
+
+          Xhummingbird.send_exception(error, level: level, tags: convert_to_rack_tags(env))
+        end
 
         response
       end
