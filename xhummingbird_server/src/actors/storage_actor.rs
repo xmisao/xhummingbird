@@ -1,6 +1,7 @@
-use crate::messages::{PutEvent, HeadEvents, GetEvent, SaveSnapshot, StatEvents};
+use crate::messages::*;
 use crate::protos::event::Event;
 use crate::store::Store;
+use std::collections::HashMap;
 use actix::prelude::*;
 use protobuf::Message;
 use std::env;
@@ -70,5 +71,15 @@ impl Handler<StatEvents> for StorageActor {
         let stat = self.store.stat(msg.title);
 
         Ok(stat)
+    }
+}
+
+impl Handler<GetTitles> for StorageActor {
+    type Result = std::result::Result<HashMap<String,u64>, ()>;
+
+    fn handle(&mut self, msg: GetTitles, _ctx: &mut Context<Self>) -> Self::Result {
+        let titles = self.store.titles();
+
+        Ok(titles)
     }
 }

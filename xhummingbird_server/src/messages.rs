@@ -1,5 +1,6 @@
 use actix::prelude::*;
 use crate::protos::event::Event;
+use std::collections::HashMap;
 
 #[derive(Message)]
 #[rtype(result = "std::result::Result<(), ()>")]
@@ -35,4 +36,9 @@ pub struct SaveSnapshot{
 #[rtype(result = "std::result::Result<(Vec<u64>), ()>")]
 pub struct StatEvents{
     pub title: Option<String>,
+}
+
+#[derive(Message)]
+#[rtype(result = "std::result::Result<(HashMap<String, u64>), ()>")]
+pub struct GetTitles{
 }

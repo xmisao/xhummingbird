@@ -1,3 +1,8 @@
+<%
+use std::collections::HashMap;
+use crate::protos::event::Event;
+use crate::tmpl_helper;
+%>
 <html>
   <head>
     <title>xHummingbird</title>
@@ -11,7 +16,19 @@
     </div>
     <div id="main-pane">
       <h1>Events</h1>
+      <h2>Frequency</h1>
       <canvas id="frequency-chart" width="400" height="40"></canvas>
+      <% let v:HashMap<u64, u64> = HashMap::new(); %>
+      <% if titles != None { %>
+      <h2>Summary</h1>
+      <table>
+        <tr><th>Title</th><th>Num of events</th></tr>
+      <% for (k, v) in titles.unwrap() { %>
+      <tr><td><a href="<%= tmpl_helper::title_to_title_link(&k) %>"><%= k %></a></td><td><%= v %></td></tr>
+      <% } %>
+      </table>
+      <% } %>
+      <h2>List</h1>
       <div>
         <% if from == None { %>
         Showing the latest events.

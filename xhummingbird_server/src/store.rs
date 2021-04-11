@@ -1,6 +1,6 @@
 use crate::protos::event::Event;
 use crate::helper;
-use std::collections::BTreeMap;
+use std::collections::{BTreeMap, HashMap};
 use protobuf::Message;
 use std::convert::TryFrom;
 use std::fs::File;
@@ -78,6 +78,21 @@ impl Store {
         }
 
         stat
+    }
+
+    pub fn titles(&self) -> HashMap<String, u64>{
+        let iter = self.data.range(..).rev();
+
+        let mut titles = HashMap::new();
+
+        for event in iter {
+            let event = event.1;
+
+            let v = titles.entry(event.title.clone()).or_insert_with(||{0});
+            *v += 1;
+        }
+
+        titles
     }
 
     pub fn get(&self, id: u64) -> Option<&Event>{

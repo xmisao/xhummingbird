@@ -6,3 +6,4 @@ pub mod store;
 pub mod web;
 pub mod helper;
 pub mod loader;
+pub mod tmpl_helper;
