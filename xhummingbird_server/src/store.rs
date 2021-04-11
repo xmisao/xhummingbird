@@ -42,7 +42,7 @@ impl Store {
 
                 n += 1;
 
-                if n > 10 {
+                if n > 100 {
                     break;
                 }
             }
@@ -81,7 +81,12 @@ impl Store {
     }
 
     pub fn titles(&self) -> HashMap<String, u64>{
-        let iter = self.data.range(..).rev();
+        let from_dt = chrono::Utc::now().checked_sub_signed(Duration::hours(168)).unwrap();
+        let sec:u64 = from_dt.timestamp().try_into().unwrap();
+        let nsec:u64 = from_dt.timestamp_subsec_nanos().try_into().unwrap();
+        let from:u64 = sec * 1_000_000_000 + nsec;
+
+        let iter = self.data.range(from..).rev();
 
         let mut titles = HashMap::new();
 
