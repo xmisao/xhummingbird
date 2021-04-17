@@ -31,9 +31,14 @@ fn main() {
 
     receiver_worker::start(storage_actor_address.clone(), notification_actor_address.clone());
 
-    let control_actor = ControlActor{storage_actor_address: storage_actor_address.clone()};
-    let control_actor_address = control_actor.start();
-    input_worker::start(control_actor_address);
+    let default_no_control = "0".to_string();
+    let no_control = env::var("XH_NO_CONTROL").unwrap_or(default_no_control).parse::<u32>().unwrap();
+
+    if no_control == 0 {
+        let control_actor = ControlActor{storage_actor_address: storage_actor_address.clone()};
+        let control_actor_address = control_actor.start();
+        input_worker::start(control_actor_address);
+    }
 
     web::start(storage_actor_address.clone());
 
