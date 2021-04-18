@@ -2,6 +2,7 @@ use actix::prelude::*;
 use actix_web::{get, web, App, HttpServer, HttpResponse, Responder};
 use std::time::Duration;
 use std::thread;
+use tokio::time::sleep;
 
 fn main() {
     let sys = actix::System::new("app");
@@ -15,11 +16,11 @@ fn main() {
     let shutdown_actor_address = shutdown_actor.start();
 
     let sleep_actor = SleepActor{shutdown_actor_address: shutdown_actor_address.clone()};
-    let sleep_actor_address = sleep_actor.start();
+    let sleep_actor_address = SleepActor::start_in_arbiter(&Arbiter::new(), |_| sleep_actor);
     let sleep_actor_address1 = sleep_actor_address.clone();
 
     let sleep_actor2 = SleepActor2{shutdown_actor_address: shutdown_actor_address.clone()};
-    let sleep_actor2_address = sleep_actor2.start();
+    let sleep_actor2_address = SleepActor2::start_in_arbiter(&Arbiter::new(), |_| sleep_actor2);
     let sleep_actor2_address1 = sleep_actor2_address.clone();
 
     actix::spawn(async move {
@@ -61,7 +62,12 @@ struct SleepActor{
 impl Actor for SleepActor{
     type Context = Context<Self>;
 
+    fn started(&mut self, ctx: &mut Self::Context) {
+        ctx.set_mailbox_capacity(100);
+    }
+
     fn stopped(&mut self, ctx: &mut Self::Context){
+        println!("SA1: stopped");
         self.shutdown_actor_address.try_send(Stopped{actor_id: 1});
     }
 }
@@ -98,7 +104,12 @@ struct SleepActor2{
 impl Actor for SleepActor2{
     type Context = Context<Self>;
 
+    fn started(&mut self, ctx: &mut Self::Context) {
+        ctx.set_mailbox_capacity(100);
+    }
+
     fn stopped(&mut self, ctx: &mut Self::Context){
+        println!("SA2: stopped");
         self.shutdown_actor_address.try_send(Stopped{actor_id: 2});
     }
 }
