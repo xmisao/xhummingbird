@@ -10,17 +10,20 @@ fn main() {
     HttpServer::new(move ||
                     App::new()
                     .service(root)
-                   ).bind("0.0.0.0:8080").unwrap().run();
+                   ).bind("0.0.0.0:8080").unwrap().disable_signals().run();
 
+    let mut arbiter0 = Arbiter::new();
     let shutdown_actor = ShutdownActor::new();
-    let shutdown_actor_address = shutdown_actor.start();
+    let shutdown_actor_address = ShutdownActor::start_in_arbiter(&arbiter0, |_| shutdown_actor);
 
+    let mut arbiter1 = Arbiter::new();
     let sleep_actor = SleepActor{shutdown_actor_address: shutdown_actor_address.clone()};
-    let sleep_actor_address = SleepActor::start_in_arbiter(&Arbiter::new(), |_| sleep_actor);
+    let sleep_actor_address = SleepActor::start_in_arbiter(&arbiter1, |_| sleep_actor);
     let sleep_actor_address1 = sleep_actor_address.clone();
 
+    let mut arbiter2 = Arbiter::new();
     let sleep_actor2 = SleepActor2{shutdown_actor_address: shutdown_actor_address.clone()};
-    let sleep_actor2_address = SleepActor2::start_in_arbiter(&Arbiter::new(), |_| sleep_actor2);
+    let sleep_actor2_address = SleepActor2::start_in_arbiter(&arbiter2, |_| sleep_actor2);
     let sleep_actor2_address1 = sleep_actor2_address.clone();
 
     actix::spawn(async move {
@@ -40,12 +43,24 @@ fn main() {
         let sleep_actor2_address2 = sleep_actor2_address.clone();
 
         println!("ctrlc handler started");
-        sleep_actor_address2.try_send(Stop{});
-        sleep_actor2_address2.try_send(Stop{});
+
+        println!("Send stop to actor: {:?}", sleep_actor_address2.try_send(Stop{}).is_ok());
+        println!("Send stop to actor2: {:?}", sleep_actor2_address2.try_send(Stop{}).is_ok());
+
         println!("ctrlc handler finished");
     }).unwrap();
 
+    // System::current().stop();
+
     let _ = sys.run();
+    println!("sys.run() finished.");
+
+    arbiter2.join();
+    println!("arbiter2.join() finished.");
+    arbiter1.join();
+    println!("arbiter1.join() finished.");
+    arbiter0.join();
+    println!("arbiter0.join() finished.");
 
     println!("exit");
 }
@@ -68,7 +83,8 @@ impl Actor for SleepActor{
 
     fn stopped(&mut self, ctx: &mut Self::Context){
         println!("SA1: stopped");
-        self.shutdown_actor_address.try_send(Stopped{actor_id: 1});
+        let result = self.shutdown_actor_address.try_send(Stopped{actor_id: 1});
+        println!("{:?}", result);
     }
 }
 
@@ -110,7 +126,8 @@ impl Actor for SleepActor2{
 
     fn stopped(&mut self, ctx: &mut Self::Context){
         println!("SA2: stopped");
-        self.shutdown_actor_address.try_send(Stopped{actor_id: 2});
+        let result = self.shutdown_actor_address.try_send(Stopped{actor_id: 2});
+        println!("{:?}", result);
     }
 }
 
@@ -178,6 +195,11 @@ impl ShutdownActor{
 
 impl Actor for ShutdownActor{
     type Context = Context<Self>;
+
+    fn stopped(&mut self, ctx: &mut Self::Context){
+        println!("Shutdown Actor: stopped");
+        System::current().stop();
+    }
 }
 
 impl Handler<Stopped> for ShutdownActor {
@@ -187,7 +209,9 @@ impl Handler<Stopped> for ShutdownActor {
         println!("Shutdown handler started.");
         if self.join(msg.actor_id) {
             println!("Joined!");
-            System::current().stop();
+            Context::stop(ctx);
+
+            //std::process::exit(0); // Added
         } else {
             println!("Yet joined.");
         }
