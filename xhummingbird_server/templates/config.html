@@ -1,0 +1,26 @@
+<%
+use crate::config;
+%>
+<html>
+  <head>
+    <title>xHummingbird</title>
+    <link rel="stylesheet" href="/static/css/normalize.css">
+    <link rel="stylesheet" href="/static/css/theme.css">
+    <link rel="icon" type="image/png" href="/static/img/favicon.png">
+  </head>
+  <body>
+    <div id="breadcrumb">
+      <img width="16px" height="16px" src="/static/img/logo.svg"> <a href="/">xHummingbird</a> &gt; config
+    </div>
+    <div id="main-pane">
+      <h1>Config</h1>
+      <table>
+        <tr><th>Item</th><th>Value</th></tr>
+        <tr><td>slack_incoming_webhook_endpoint</td><td><%= config::slack_incoming_webhook_endpoint() %></td></tr>
+        <tr><td>notification_threshold</td><td><%= config::notification_threshold() %></td></tr>
+        <tr><td>no_control</td><td><%= config::no_control() %></td></tr>
+        <tr><td>snapshot</td><td><%= config::snapshot() %></td></tr>
+      </table>
+    </div>
+  </body>
+</html>

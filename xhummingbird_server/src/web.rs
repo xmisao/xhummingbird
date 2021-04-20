@@ -21,6 +21,7 @@ pub fn start(storage_actor_address: Addr<StorageActor>){
                     .service(root)
                     .service(events_root)
                     .service(event_item)
+                    .service(config)
                     .service(actix_files::Files::new("/static", "./static"))
                    ).bind(address).unwrap().run();
 
@@ -171,4 +172,16 @@ struct EventTemplate {
 #[template(path = "not_found.html")]
 struct NotFoundTemplate {
     message: String,
+}
+
+#[derive(TemplateOnce)]
+#[template(path = "config.html")]
+struct ConfigTemplate {
+}
+
+#[get("/config")]
+async fn config() -> impl Responder {
+    let tmpl = ConfigTemplate{};
+    let body = tmpl.render_once().unwrap();
+    HttpResponse::Ok().content_type("text/html").body(body)
 }
