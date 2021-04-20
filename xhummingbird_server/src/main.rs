@@ -6,8 +6,8 @@ use xhummingbird_server::store::Store;
 use xhummingbird_server::web;
 use xhummingbird_server::messages::{SaveSnapshot};
 use xhummingbird_server::loader;
+use xhummingbird_server::config;
 
-use std::env;
 use std::time::Duration;
 use std::thread;
 
@@ -16,10 +16,8 @@ use actix::prelude::*;
 fn main() {
     let sys = actix::System::new("app");
 
-    let slack_incoming_webhook_endpoint = env::var("XH_SLACK_INCOMING_WEBHOOK_ENDPOINT").unwrap().to_string();
-    let default_notification_threshold = "0".to_string();
-    let notification_threshold = env::var("XH_NOTIFICATION_THRESHOLD").unwrap_or(default_notification_threshold).parse::<u32>().unwrap();
-
+    let slack_incoming_webhook_endpoint = config::slack_incoming_webhook_endpoint();
+    let notification_threshold = config::notification_threshold();
     println!("Notify Slack when receiving an event that has a level greater equal than {}", notification_threshold);
 
     let notification_actor = NotificationActor{slack_incoming_webhook_endpoint, notification_threshold};
@@ -31,10 +29,7 @@ fn main() {
 
     receiver_worker::start(storage_actor_address.clone(), notification_actor_address.clone());
 
-    let default_no_control = "0".to_string();
-    let no_control = env::var("XH_NO_CONTROL").unwrap_or(default_no_control).parse::<u32>().unwrap();
-
-    if no_control == 0 {
+    if !config::no_control() {
         let control_actor = ControlActor{storage_actor_address: storage_actor_address.clone()};
         let control_actor_address = control_actor.start();
         input_worker::start(control_actor_address);

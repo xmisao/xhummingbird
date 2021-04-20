@@ -1,10 +1,10 @@
 use crate::messages::*;
 use crate::protos::event::Event;
 use crate::store::Store;
+use crate::config;
 use std::collections::HashMap;
 use actix::prelude::*;
 use protobuf::Message;
-use std::env;
 
 pub struct StorageActor{
     pub store: Store
@@ -52,7 +52,7 @@ impl Handler<SaveSnapshot> for StorageActor {
     type Result = std::result::Result<usize, std::io::Error>;
 
     fn handle(&mut self, msg: SaveSnapshot, _ctx: &mut Context<Self>) -> Self::Result {
-        let path = &env::var("XH_SNAPSHOT").unwrap();
+        let path = &config::snapshot();
         let result = self.store.save(path);
 
         match &result {

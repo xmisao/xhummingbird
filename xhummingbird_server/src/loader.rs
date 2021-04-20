@@ -1,18 +1,18 @@
 use crate::protos::event::Event;
 use crate::messages::PutEvent;
 use crate::actors::storage_actor::StorageActor;
+use crate::config;
 use actix::prelude::*;
 use protobuf::Message;
 use std::fs::File;
 use std::io::{self, Read, Write, BufReader};
 use std::convert::TryFrom;
 use std::thread;
-use std::env;
 use std::path::Path;
 
 pub fn start(storage_actor_address: Addr<StorageActor>) {
     thread::spawn(move || {
-        let path = &env::var("XH_SNAPSHOT").unwrap();
+        let path = &config::snapshot();
         println!("Loaded {} events", load_from_file(path, storage_actor_address).unwrap());
     });
 }
