@@ -42,3 +42,8 @@ pub struct StatEvents{
 #[rtype(result = "std::result::Result<(HashMap<String, u64>), ()>")]
 pub struct GetTitles{
 }
+
+#[derive(Message)]
+#[rtype(result = "std::result::Result<(), ()>")]
+pub struct Stop{
+}

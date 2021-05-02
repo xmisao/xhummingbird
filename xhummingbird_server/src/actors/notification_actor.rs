@@ -1,4 +1,4 @@
-use crate::messages::PutEvent;
+use crate::messages::*;
 use actix::prelude::*;
 use std::collections::HashMap;
 use std::time::Duration;
@@ -10,6 +10,10 @@ pub struct NotificationActor{
 
 impl Actor for NotificationActor{
     type Context = Context<Self>;
+
+    fn stopped(&mut self, ctx: &mut Self::Context){
+        println!("NotificationActor stopped.");
+    }
 }
 
 impl Handler<PutEvent> for NotificationActor {
@@ -38,3 +42,12 @@ impl Handler<PutEvent> for NotificationActor {
     }
 }
 
+impl Handler<Stop> for NotificationActor {
+    type Result = std::result::Result<(), ()>;
+
+    fn handle(&mut self, msg: Stop, ctx: &mut Context<Self>) -> Self::Result {
+        Context::stop(ctx);
+
+        Ok(())
+    }
+}

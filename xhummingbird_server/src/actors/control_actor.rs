@@ -9,6 +9,10 @@ pub struct ControlActor{
 
 impl Actor for ControlActor{
     type Context = Context<Self>;
+
+    fn stopped(&mut self, ctx: &mut Self::Context){
+        println!("ControlActor stopped.");
+    }
 }
 
 impl Handler<CommandInput> for ControlActor {
@@ -50,6 +54,16 @@ impl Handler<CommandInput> for ControlActor {
                 }
             }
         });
+
+        Ok(())
+    }
+}
+
+impl Handler<Stop> for ControlActor {
+    type Result = std::result::Result<(), ()>;
+
+    fn handle(&mut self, msg: Stop, ctx: &mut Context<Self>) -> Self::Result {
+        Context::stop(ctx);
 
         Ok(())
     }

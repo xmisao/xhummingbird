@@ -12,6 +12,11 @@ pub struct StorageActor{
 
 impl Actor for StorageActor{
     type Context = Context<Self>;
+
+    fn stopped(&mut self, ctx: &mut Self::Context){
+        println!("StorageActor stopped.");
+        System::current().stop();
+    }
 }
 
 impl Handler<PutEvent> for StorageActor {
@@ -81,5 +86,15 @@ impl Handler<GetTitles> for StorageActor {
         let titles = self.store.titles();
 
         Ok(titles)
+    }
+}
+
+impl Handler<Stop> for StorageActor {
+    type Result = std::result::Result<(), ()>;
+
+    fn handle(&mut self, msg: Stop, ctx: &mut Context<Self>) -> Self::Result {
+        Context::stop(ctx);
+
+        Ok(())
     }
 }

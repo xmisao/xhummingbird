@@ -4,7 +4,7 @@ use xhummingbird_server::actors::control_actor::ControlActor;
 use xhummingbird_server::actors::notification_actor::NotificationActor;
 use xhummingbird_server::store::Store;
 use xhummingbird_server::web;
-use xhummingbird_server::messages::{SaveSnapshot};
+use xhummingbird_server::messages::*;
 use xhummingbird_server::loader;
 use xhummingbird_server::config;
 
@@ -32,10 +32,11 @@ fn main() {
     receiver_worker::start(storage_actor_address.clone(), notification_actor_address.clone());
 
     let mut control_arbiter = Arbiter::new();
+    let control_actor_address:Option<Addr<ControlActor>> = None;
     if !config::no_control() {
         let control_actor = ControlActor{storage_actor_address: storage_actor_address.clone()};
-        let control_actor_address = ControlActor::start_in_arbiter(&control_arbiter, |_| control_actor);
-        input_worker::start(control_actor_address);
+        let control_actor_address = Some(ControlActor::start_in_arbiter(&control_arbiter, |_| control_actor));
+        input_worker::start(control_actor_address.unwrap());
     }
 
     web::start(storage_actor_address.clone());
@@ -55,9 +56,16 @@ fn main() {
     });
 
     ctrlc::set_handler(move || {
+        println!("Start shutdown.");
+
         storage_actor_address.try_send(SaveSnapshot{}).ok();
-        thread::sleep(Duration::from_secs(3)); // FIXME
-        std::process::exit(0);
+
+        match control_actor_address.clone() {
+            Some(control_actor_address) => control_actor_address.try_send(Stop{}).is_ok(),
+            None => true,
+        };
+        notification_actor_address.try_send(Stop{}).is_ok();
+        storage_actor_address.try_send(Stop{}).is_ok();
     }).unwrap();
 
     let _ = sys.run();
