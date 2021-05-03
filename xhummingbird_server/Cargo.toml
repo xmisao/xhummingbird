@@ -13,7 +13,7 @@ actix-rt = "1.1"
 sailfish = "0.3.1"
 protobuf = { version = "2", features = ["with-bytes"] }
 zmq = "0.9.2"
-ctrlc = "3.1.8"
+ctrlc = { version = "3.1.8", features = ["termination"] }
 chrono = "0.4.6"
 tokio = "0.2.25"
 serde_derive = "1.0.124"
