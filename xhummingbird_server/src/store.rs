@@ -5,7 +5,7 @@ use protobuf::Message;
 use std::convert::TryFrom;
 use std::fs::File;
 use std::io::{self, Write, BufWriter};
-use chrono::{Utc, TimeZone, Duration};
+use chrono::Duration;
 use std::convert::TryInto;
 
 pub struct Store {
@@ -68,8 +68,6 @@ impl Store {
             let event = event.1;
 
             if title == None || event.title == title.as_deref().unwrap() {
-                let event_time = helper::timestamp_u64(event);
-
                 let event_timestamp = helper::timestamp_u64(event);
                 let index = (event_timestamp - from) / (60 * 60 * 1_000_000_000);
 
@@ -115,14 +113,14 @@ impl Store {
             let bytes = event.write_to_bytes().unwrap();
             let size:u32 = TryFrom::try_from(bytes.len()).unwrap();
 
-            writer.write_all(&size.to_ne_bytes());
-            writer.write_all(&bytes);
+            writer.write_all(&size.to_ne_bytes()).unwrap();
+            writer.write_all(&bytes).unwrap();
 
             n += 1;
         }
 
         let zero: u32 = 0;
-        writer.write_all(&zero.to_ne_bytes());
+        writer.write_all(&zero.to_ne_bytes()).unwrap();
 
         writer.flush().unwrap();
 

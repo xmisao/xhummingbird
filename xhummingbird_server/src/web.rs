@@ -140,7 +140,7 @@ struct EventsInfo {
 }
 
 #[get("/events/{id}")]
-async fn event_item(web::Path((id)): web::Path<(u64)>, data: web::Data<WebState>) -> impl Responder {
+async fn event_item(web::Path(id): web::Path<u64>, data: web::Data<WebState>) -> impl Responder {
     let storage_actor = &data.storage_actor;
     let result = storage_actor.send(GetEvent{id}).await.unwrap();
 

@@ -9,7 +9,6 @@ use xhummingbird_server::loader;
 use xhummingbird_server::config;
 
 use std::time::Duration;
-use std::thread;
 
 use actix::prelude::*;
 
@@ -58,23 +57,23 @@ fn main() {
     ctrlc::set_handler(move || {
         println!("Start shutdown.");
 
-        storage_actor_address.try_send(SaveSnapshot{}).ok();
+        storage_actor_address.try_send(SaveSnapshot{}).unwrap();
 
         match control_actor_address.clone() {
-            Some(control_actor_address) => control_actor_address.try_send(Stop{}).is_ok(),
-            None => true,
+            Some(control_actor_address) => control_actor_address.try_send(Stop{}).unwrap(),
+            None => (),
         };
-        notification_actor_address.try_send(Stop{}).is_ok();
-        storage_actor_address.try_send(Stop{}).is_ok();
+        notification_actor_address.try_send(Stop{}).unwrap();
+        storage_actor_address.try_send(Stop{}).unwrap();
     }).unwrap();
 
     let _ = sys.run();
     println!("sys.run() finished.");
 
-    notification_arbiter.join();
-    storage_arbiter.join();
+    notification_arbiter.join().unwrap();
+    storage_arbiter.join().unwrap();
     if !config::no_control() {
-        control_arbiter.join();
+        control_arbiter.join().unwrap();
     }
 
     println!("Shutdown correctly.");

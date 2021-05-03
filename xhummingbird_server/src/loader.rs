@@ -5,7 +5,7 @@ use crate::config;
 use actix::prelude::*;
 use protobuf::Message;
 use std::fs::File;
-use std::io::{self, Read, Write, BufReader};
+use std::io::{self, Read, BufReader};
 use std::convert::TryFrom;
 use std::thread;
 use std::path::Path;

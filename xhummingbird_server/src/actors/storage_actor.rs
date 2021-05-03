@@ -4,7 +4,6 @@ use crate::store::Store;
 use crate::config;
 use std::collections::HashMap;
 use actix::prelude::*;
-use protobuf::Message;
 
 pub struct StorageActor{
     pub store: Store
@@ -13,7 +12,7 @@ pub struct StorageActor{
 impl Actor for StorageActor{
     type Context = Context<Self>;
 
-    fn stopped(&mut self, ctx: &mut Self::Context){
+    fn stopped(&mut self, _ctx: &mut Self::Context){
         println!("StorageActor stopped.");
         System::current().stop();
     }
@@ -56,7 +55,7 @@ impl Handler<GetEvent> for StorageActor {
 impl Handler<SaveSnapshot> for StorageActor {
     type Result = std::result::Result<usize, std::io::Error>;
 
-    fn handle(&mut self, msg: SaveSnapshot, _ctx: &mut Context<Self>) -> Self::Result {
+    fn handle(&mut self, _msg: SaveSnapshot, _ctx: &mut Context<Self>) -> Self::Result {
         let path = &config::snapshot();
         let result = self.store.save(path);
 
@@ -82,7 +81,7 @@ impl Handler<StatEvents> for StorageActor {
 impl Handler<GetTitles> for StorageActor {
     type Result = std::result::Result<HashMap<String,u64>, ()>;
 
-    fn handle(&mut self, msg: GetTitles, _ctx: &mut Context<Self>) -> Self::Result {
+    fn handle(&mut self, _msg: GetTitles, _ctx: &mut Context<Self>) -> Self::Result {
         let titles = self.store.titles();
 
         Ok(titles)
@@ -92,7 +91,7 @@ impl Handler<GetTitles> for StorageActor {
 impl Handler<Stop> for StorageActor {
     type Result = std::result::Result<(), ()>;
 
-    fn handle(&mut self, msg: Stop, ctx: &mut Context<Self>) -> Self::Result {
+    fn handle(&mut self, _msg: Stop, ctx: &mut Context<Self>) -> Self::Result {
         Context::stop(ctx);
 
         Ok(())

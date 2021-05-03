@@ -44,7 +44,7 @@ fn main(){
     // Write event to event.bin
     let mut file = File::create("event.bin").unwrap();
     let bytes = event.write_to_bytes().unwrap();
-    file.write(&bytes);
+    file.write(&bytes).unwrap();
 
     println!("write_event finished.");
 }

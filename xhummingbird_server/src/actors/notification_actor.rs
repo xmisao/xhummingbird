@@ -11,7 +11,7 @@ pub struct NotificationActor{
 impl Actor for NotificationActor{
     type Context = Context<Self>;
 
-    fn stopped(&mut self, ctx: &mut Self::Context){
+    fn stopped(&mut self, _ctx: &mut Self::Context){
         println!("NotificationActor stopped.");
     }
 }
@@ -33,7 +33,7 @@ impl Handler<PutEvent> for NotificationActor {
             let res = client.post(&self.slack_incoming_webhook_endpoint).json(&params).send();
 
             match res {
-                Ok((_)) => (),
+                Ok(_) => (),
                 Err(x) => println!("Notification error: {:?}", x)
             }
         }
@@ -45,7 +45,7 @@ impl Handler<PutEvent> for NotificationActor {
 impl Handler<Stop> for NotificationActor {
     type Result = std::result::Result<(), ()>;
 
-    fn handle(&mut self, msg: Stop, ctx: &mut Context<Self>) -> Self::Result {
+    fn handle(&mut self, _msg: Stop, ctx: &mut Context<Self>) -> Self::Result {
         Context::stop(ctx);
 
         Ok(())
