@@ -1,0 +1,13 @@
+version: 0.2
+
+phases:
+  pre_build:
+    commands:
+      - echo "$DOCKERHUB_PASSWORD" | docker login -u "$DOCKERHUB_USERNAME" --password-stdin
+  build:
+    commands:
+      - cd xhummingbird_server
+      - docker build -t xmisao/xhummingbird:nightly .
+  post_build:
+    commands:
+      - docker push xmisao/xhummingbird:nightly
