@@ -1,23 +1,29 @@
-use crate::protos::event::Event;
-use crate::messages::PutEvent;
 use crate::actors::storage_actor::StorageActor;
 use crate::config;
+use crate::messages::PutEvent;
+use crate::protos::event::Event;
 use actix::prelude::*;
 use protobuf::Message;
-use std::fs::File;
-use std::io::{self, Read, BufReader};
 use std::convert::TryFrom;
-use std::thread;
+use std::fs::File;
+use std::io::{self, BufReader, Read};
 use std::path::Path;
+use std::thread;
 
 pub fn start(storage_actor_address: Addr<StorageActor>) {
     thread::spawn(move || {
         let path = &config::snapshot();
-        println!("Loaded {} events", load_from_file(path, storage_actor_address).unwrap());
+        println!(
+            "Loaded {} events",
+            load_from_file(path, storage_actor_address).unwrap()
+        );
     });
 }
 
-fn load_from_file(path:&str, storage_actor_address: Addr<StorageActor>) -> Result<usize, io::Error> {
+fn load_from_file(
+    path: &str,
+    storage_actor_address: Addr<StorageActor>,
+) -> Result<usize, io::Error> {
     if Path::new(path).exists() {
         let mut size_buf = [0; 4]; // NOTE: u32
         let mut reader = BufReader::new(File::open(path)?);
@@ -26,7 +32,7 @@ fn load_from_file(path:&str, storage_actor_address: Addr<StorageActor>) -> Resul
         loop {
             reader.read_exact(&mut size_buf)?;
 
-            let size:usize = TryFrom::try_from(u32::from_ne_bytes(size_buf)).unwrap();
+            let size: usize = TryFrom::try_from(u32::from_ne_bytes(size_buf)).unwrap();
 
             if size == 0 {
                 break;
@@ -36,7 +42,11 @@ fn load_from_file(path:&str, storage_actor_address: Addr<StorageActor>) -> Resul
             reader.read_exact(&mut event_buf)?;
 
             let event = Event::parse_from_bytes(&event_buf)?;
-            storage_actor_address.try_send(PutEvent{event: event.clone()}).ok();
+            storage_actor_address
+                .try_send(PutEvent {
+                    event: event.clone(),
+                })
+                .ok();
 
             n += 1;
         }

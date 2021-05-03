@@ -1,31 +1,31 @@
-use crate::protos::event::Event;
 use crate::helper;
-use std::collections::{BTreeMap, HashMap};
-use protobuf::Message;
-use std::convert::TryFrom;
-use std::fs::File;
-use std::io::{self, Write, BufWriter};
+use crate::protos::event::Event;
 use chrono::Duration;
+use protobuf::Message;
+use std::collections::{BTreeMap, HashMap};
+use std::convert::TryFrom;
 use std::convert::TryInto;
+use std::fs::File;
+use std::io::{self, BufWriter, Write};
 
 pub struct Store {
-    data: BTreeMap<u64, Event>
+    data: BTreeMap<u64, Event>,
 }
 
 impl Store {
-    pub fn new() -> Store{
-        Store{
-            data: BTreeMap::new()
+    pub fn new() -> Store {
+        Store {
+            data: BTreeMap::new(),
         }
     }
 
-    pub fn put(&mut self, event: Event){
+    pub fn put(&mut self, event: Event) {
         let time = helper::timestamp_u64(&event);
 
         self.data.insert(time, event);
     }
 
-    pub fn head(&self, from: Option<u64>, title: Option<String>) -> Vec<&Event>{
+    pub fn head(&self, from: Option<u64>, title: Option<String>) -> Vec<&Event> {
         let iter = match from {
             None => self.data.range(..).rev(),
             Some(u) => self.data.range(..u).rev(),
@@ -51,11 +51,13 @@ impl Store {
         events
     }
 
-    pub fn stat(&self, title: Option<String>) -> Vec<u64>{
-        let from_dt = chrono::Utc::now().checked_sub_signed(Duration::hours(168)).unwrap();
-        let sec:u64 = from_dt.timestamp().try_into().unwrap();
-        let nsec:u64 = from_dt.timestamp_subsec_nanos().try_into().unwrap();
-        let from:u64 = sec * 1_000_000_000 + nsec;
+    pub fn stat(&self, title: Option<String>) -> Vec<u64> {
+        let from_dt = chrono::Utc::now()
+            .checked_sub_signed(Duration::hours(168))
+            .unwrap();
+        let sec: u64 = from_dt.timestamp().try_into().unwrap();
+        let nsec: u64 = from_dt.timestamp_subsec_nanos().try_into().unwrap();
+        let from: u64 = sec * 1_000_000_000 + nsec;
 
         let iter = self.data.range(from..).rev();
 
@@ -80,11 +82,13 @@ impl Store {
         stat
     }
 
-    pub fn titles(&self) -> HashMap<String, u64>{
-        let from_dt = chrono::Utc::now().checked_sub_signed(Duration::hours(168)).unwrap();
-        let sec:u64 = from_dt.timestamp().try_into().unwrap();
-        let nsec:u64 = from_dt.timestamp_subsec_nanos().try_into().unwrap();
-        let from:u64 = sec * 1_000_000_000 + nsec;
+    pub fn titles(&self) -> HashMap<String, u64> {
+        let from_dt = chrono::Utc::now()
+            .checked_sub_signed(Duration::hours(168))
+            .unwrap();
+        let sec: u64 = from_dt.timestamp().try_into().unwrap();
+        let nsec: u64 = from_dt.timestamp_subsec_nanos().try_into().unwrap();
+        let from: u64 = sec * 1_000_000_000 + nsec;
 
         let iter = self.data.range(from..).rev();
 
@@ -93,14 +97,14 @@ impl Store {
         for event in iter {
             let event = event.1;
 
-            let v = titles.entry(event.title.clone()).or_insert_with(||{0});
+            let v = titles.entry(event.title.clone()).or_insert_with(|| 0);
             *v += 1;
         }
 
         titles
     }
 
-    pub fn get(&self, id: u64) -> Option<&Event>{
+    pub fn get(&self, id: u64) -> Option<&Event> {
         self.data.get(&id)
     }
 
@@ -111,7 +115,7 @@ impl Store {
 
         for (_, event) in &self.data {
             let bytes = event.write_to_bytes().unwrap();
-            let size:u32 = TryFrom::try_from(bytes.len()).unwrap();
+            let size: u32 = TryFrom::try_from(bytes.len()).unwrap();
 
             writer.write_all(&size.to_ne_bytes()).unwrap();
             writer.write_all(&bytes).unwrap();

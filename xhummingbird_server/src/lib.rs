@@ -1,10 +1,10 @@
-pub mod config;
-pub mod protos;
-pub mod workers;
 pub mod actors;
-pub mod messages;
-pub mod store;
-pub mod web;
+pub mod config;
 pub mod helper;
 pub mod loader;
+pub mod messages;
+pub mod protos;
+pub mod store;
 pub mod tmpl_helper;
+pub mod web;
+pub mod workers;

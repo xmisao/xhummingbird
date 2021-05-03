@@ -1,8 +1,8 @@
-use xhummingbird_server::protos::event::Event;
 use protobuf::Message;
 use std::fs;
+use xhummingbird_server::protos::event::Event;
 
-fn main(){
+fn main() {
     println!("read_event started.");
 
     // Read event from event.bin

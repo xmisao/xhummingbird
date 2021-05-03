@@ -9,5 +9,6 @@ fn main() {
             serde_derive: Some(true),
             ..Default::default()
         },
-    }).expect("protoc");
+    })
+    .expect("protoc");
 }

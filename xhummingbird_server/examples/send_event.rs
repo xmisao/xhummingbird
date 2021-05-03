@@ -1,13 +1,13 @@
-use xhummingbird_server::protos::event::Event;
+use protobuf::well_known_types::Timestamp;
 use protobuf::Message;
 use protobuf::RepeatedField;
-use protobuf::well_known_types::Timestamp;
 use std::collections::HashMap;
+use std::convert::TryFrom;
 use std::thread;
 use std::time::{Duration, SystemTime};
-use std::convert::TryFrom;
+use xhummingbird_server::protos::event::Event;
 
-fn main(){
+fn main() {
     println!("send_event started.");
 
     let context = zmq::Context::new();
@@ -35,13 +35,11 @@ fn build_sample_event(n: u32) -> Event {
     event.set_title("SampleEvent".to_string());
     event.set_message(format!("Something happend #{}", n));
 
-    let trace = RepeatedField::from_vec(
-        vec!(
-            "trace 1".to_string(),
-            "trace 2".to_string(),
-            "trace 3".to_string(),
-        )
-    );
+    let trace = RepeatedField::from_vec(vec![
+        "trace 1".to_string(),
+        "trace 2".to_string(),
+        "trace 3".to_string(),
+    ]);
     event.set_trace(trace);
 
     let mut tags = HashMap::new();
@@ -50,7 +48,9 @@ fn build_sample_event(n: u32) -> Event {
 
     let mut timestamp = Timestamp::new();
 
-    let since = SystemTime::now().duration_since(SystemTime::UNIX_EPOCH).unwrap();
+    let since = SystemTime::now()
+        .duration_since(SystemTime::UNIX_EPOCH)
+        .unwrap();
     let sec = since.as_secs();
     let nsec = since.subsec_nanos();
 

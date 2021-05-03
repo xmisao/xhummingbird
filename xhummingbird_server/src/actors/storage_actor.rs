@@ -1,18 +1,18 @@
+use crate::config;
 use crate::messages::*;
 use crate::protos::event::Event;
 use crate::store::Store;
-use crate::config;
-use std::collections::HashMap;
 use actix::prelude::*;
+use std::collections::HashMap;
 
-pub struct StorageActor{
-    pub store: Store
+pub struct StorageActor {
+    pub store: Store,
 }
 
-impl Actor for StorageActor{
+impl Actor for StorageActor {
     type Context = Context<Self>;
 
-    fn stopped(&mut self, _ctx: &mut Self::Context){
+    fn stopped(&mut self, _ctx: &mut Self::Context) {
         println!("StorageActor stopped.");
         System::current().stop();
     }
@@ -47,7 +47,7 @@ impl Handler<GetEvent> for StorageActor {
     fn handle(&mut self, msg: GetEvent, _ctx: &mut Context<Self>) -> Self::Result {
         match self.store.get(msg.id) {
             Some(event) => Ok(event.clone()),
-            None => Err(())
+            None => Err(()),
         }
     }
 }
@@ -63,7 +63,7 @@ impl Handler<SaveSnapshot> for StorageActor {
             Ok(n) => println!("{} events saved.", n),
             Err(e) => println!("Save failed {:?}", e),
         };
-        
+
         result
     }
 }
@@ -79,7 +79,7 @@ impl Handler<StatEvents> for StorageActor {
 }
 
 impl Handler<GetTitles> for StorageActor {
-    type Result = std::result::Result<HashMap<String,u64>, ()>;
+    type Result = std::result::Result<HashMap<String, u64>, ()>;
 
     fn handle(&mut self, _msg: GetTitles, _ctx: &mut Context<Self>) -> Self::Result {
         let titles = self.store.titles();
