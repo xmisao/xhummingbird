@@ -73,7 +73,9 @@ impl Store {
                 let event_timestamp = helper::timestamp_u64(event);
                 let index = (event_timestamp - from) / (60 * 60 * 1_000_000_000);
 
-                stat[index as usize] += 1;
+                if index < 168 {
+                    stat[index as usize] += 1;
+                }
             }
         }
 
