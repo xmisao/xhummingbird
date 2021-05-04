@@ -25,7 +25,7 @@ impl Handler<CommandInput> for ControlActor {
         actix::spawn(async move {
             match &*command {
                 "head" => {
-                    info!("Events:");
+                    println!("Events:");
                     let s1 = storage_actor_address
                         .send(HeadEvents {
                             from: None,
@@ -33,24 +33,24 @@ impl Handler<CommandInput> for ControlActor {
                         })
                         .await
                         .unwrap();
-                    info!("s1: {:?}", s1);
+                    println!("s1: {:?}", s1);
 
                     for event in s1 {
-                        info!("{:?}", event);
+                        println!("{:?}", event);
                     }
                 }
                 "stat" => {
-                    info!("Stat:");
+                    println!("Stat:");
                     let stat = storage_actor_address
                         .send(StatEvents { title: None })
                         .await
                         .unwrap();
-                    info!("{:?}", stat);
+                    println!("{:?}", stat);
                 }
                 "titles" => {
-                    info!("Titles:");
+                    println!("Titles:");
                     let titles = storage_actor_address.send(GetTitles {}).await.unwrap();
-                    info!("{:?}", titles);
+                    println!("{:?}", titles);
                 }
                 "load" => {
                     loader::start(storage_actor_address.clone());

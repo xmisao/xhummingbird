@@ -35,25 +35,17 @@ pub fn run(
     loop {
         let bytes = subscriber.recv_bytes(0).ok()?;
         let event = Event::parse_from_bytes(&bytes).ok()?;
-        info!("{:?}", event);
+        debug!("{:?}", event);
 
-        let storage_actor_address = storage_actor_address.clone();
-
-        info!(
-            "{:?}",
-            storage_actor_address
-                .try_send(PutEvent {
-                    event: event.clone()
-                })
-                .ok()?
-        );
-        info!(
-            "{:?}",
-            notification_actor_address
-                .try_send(PutEvent {
-                    event: event.clone()
-                })
-                .ok()?
-        );
+        storage_actor_address
+            .try_send(PutEvent {
+                event: event.clone(),
+            })
+            .ok()?;
+        notification_actor_address
+            .try_send(PutEvent {
+                event: event.clone(),
+            })
+            .ok()?;
     }
 }
