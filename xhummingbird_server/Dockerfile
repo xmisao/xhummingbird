@@ -21,5 +21,6 @@ RUN cargo build --release --bin xhummingbird_server
 FROM rust:1.49.0 as runtime
 RUN apt-get update && apt-get install -y libzmq3-dev && apt-get clean
 WORKDIR app
+COPY . .
 COPY --from=builder /app/target/release/xhummingbird_server /app
 ENTRYPOINT ["./xhummingbird_server"]
