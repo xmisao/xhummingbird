@@ -1,3 +1,6 @@
+#[macro_use]
+extern crate log;
+
 pub mod actors;
 pub mod config;
 pub mod helper;

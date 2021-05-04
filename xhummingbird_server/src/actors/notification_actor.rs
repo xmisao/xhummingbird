@@ -12,7 +12,7 @@ impl Actor for NotificationActor {
     type Context = Context<Self>;
 
     fn stopped(&mut self, _ctx: &mut Self::Context) {
-        println!("NotificationActor stopped.");
+        info!("NotificationActor stopped.");
     }
 }
 
@@ -44,7 +44,7 @@ impl Handler<PutEvent> for NotificationActor {
 
             match res {
                 Ok(_) => (),
-                Err(x) => println!("Notification error: {:?}", x),
+                Err(x) => error!("Notification error: {:?}", x),
             }
         }
 

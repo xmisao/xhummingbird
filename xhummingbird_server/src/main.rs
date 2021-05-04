@@ -1,3 +1,6 @@
+#[macro_use]
+extern crate log;
+
 use xhummingbird_server::actors::control_actor::ControlActor;
 use xhummingbird_server::actors::notification_actor::NotificationActor;
 use xhummingbird_server::actors::storage_actor::StorageActor;
@@ -13,11 +16,13 @@ use std::time::Duration;
 use actix::prelude::*;
 
 fn main() {
+    env_logger::init();
+
     let sys = actix::System::new("app");
 
     let slack_incoming_webhook_endpoint = config::slack_incoming_webhook_endpoint();
     let notification_threshold = config::notification_threshold();
-    println!(
+    info!(
         "Notify Slack when receiving an event that has a level greater equal than {}",
         notification_threshold
     );
@@ -63,7 +68,7 @@ fn main() {
 
         loop {
             interval.tick().await;
-            println!("Auto saving...");
+            info!("Auto saving...");
             storage_actor_address_for_autosave
                 .try_send(SaveSnapshot {})
                 .ok();
@@ -71,7 +76,7 @@ fn main() {
     });
 
     ctrlc::set_handler(move || {
-        println!("Start shutdown.");
+        info!("Start shutdown.");
 
         storage_actor_address.try_send(SaveSnapshot {}).unwrap();
 
@@ -85,7 +90,7 @@ fn main() {
     .unwrap();
 
     let _ = sys.run();
-    println!("sys.run() finished.");
+    info!("sys.run() finished.");
 
     notification_arbiter.join().unwrap();
     storage_arbiter.join().unwrap();
@@ -93,5 +98,5 @@ fn main() {
         control_arbiter.join().unwrap();
     }
 
-    println!("Shutdown correctly.");
+    info!("Shutdown correctly.");
 }

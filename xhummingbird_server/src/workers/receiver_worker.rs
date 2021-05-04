@@ -16,7 +16,7 @@ pub fn start(
             storage_actor_address.clone(),
             notification_actor_address.clone(),
         );
-        println!("Unexpected run() aborted.");
+        warn!("Unexpected run() aborted.");
         thread::sleep(Duration::from_millis(1000));
     });
 }
@@ -30,16 +30,16 @@ pub fn run(
     let subscriber = context.socket(zmq::PULL).ok()?;
     assert!(subscriber.bind(address).is_ok());
 
-    println!("xHummingbird event receiver started at {}", address);
+    info!("xHummingbird event receiver started at {}", address);
 
     loop {
         let bytes = subscriber.recv_bytes(0).ok()?;
         let event = Event::parse_from_bytes(&bytes).ok()?;
-        println!("{:?}", event);
+        info!("{:?}", event);
 
         let storage_actor_address = storage_actor_address.clone();
 
-        println!(
+        info!(
             "{:?}",
             storage_actor_address
                 .try_send(PutEvent {
@@ -47,7 +47,7 @@ pub fn run(
                 })
                 .ok()?
         );
-        println!(
+        info!(
             "{:?}",
             notification_actor_address
                 .try_send(PutEvent {

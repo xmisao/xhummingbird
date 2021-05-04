@@ -31,7 +31,7 @@ pub fn start(storage_actor_address: Addr<StorageActor>) {
     .disable_signals()
     .run();
 
-    println!("xHummingbird web server started at {}", address);
+    info!("xHummingbird web server started at {}", address);
 }
 
 #[derive(TemplateOnce)]

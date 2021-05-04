@@ -13,7 +13,7 @@ impl Actor for StorageActor {
     type Context = Context<Self>;
 
     fn stopped(&mut self, _ctx: &mut Self::Context) {
-        println!("StorageActor stopped.");
+        info!("StorageActor stopped.");
         System::current().stop();
     }
 }
@@ -60,8 +60,8 @@ impl Handler<SaveSnapshot> for StorageActor {
         let result = self.store.save(path);
 
         match &result {
-            Ok(n) => println!("{} events saved.", n),
-            Err(e) => println!("Save failed {:?}", e),
+            Ok(n) => info!("{} events saved.", n),
+            Err(e) => error!("Save failed {:?}", e),
         };
 
         result

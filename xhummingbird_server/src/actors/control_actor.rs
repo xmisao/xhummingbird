@@ -11,7 +11,7 @@ impl Actor for ControlActor {
     type Context = Context<Self>;
 
     fn stopped(&mut self, _ctx: &mut Self::Context) {
-        println!("ControlActor stopped.");
+        info!("ControlActor stopped.");
     }
 }
 
@@ -25,7 +25,7 @@ impl Handler<CommandInput> for ControlActor {
         actix::spawn(async move {
             match &*command {
                 "head" => {
-                    println!("Events:");
+                    info!("Events:");
                     let s1 = storage_actor_address
                         .send(HeadEvents {
                             from: None,
@@ -33,24 +33,24 @@ impl Handler<CommandInput> for ControlActor {
                         })
                         .await
                         .unwrap();
-                    println!("s1: {:?}", s1);
+                    info!("s1: {:?}", s1);
 
                     for event in s1 {
-                        println!("{:?}", event);
+                        info!("{:?}", event);
                     }
                 }
                 "stat" => {
-                    println!("Stat:");
+                    info!("Stat:");
                     let stat = storage_actor_address
                         .send(StatEvents { title: None })
                         .await
                         .unwrap();
-                    println!("{:?}", stat);
+                    info!("{:?}", stat);
                 }
                 "titles" => {
-                    println!("Titles:");
+                    info!("Titles:");
                     let titles = storage_actor_address.send(GetTitles {}).await.unwrap();
-                    println!("{:?}", titles);
+                    info!("{:?}", titles);
                 }
                 "load" => {
                     loader::start(storage_actor_address.clone());
@@ -59,7 +59,7 @@ impl Handler<CommandInput> for ControlActor {
                     storage_actor_address.try_send(SaveSnapshot {}).ok();
                 }
                 _ => {
-                    println!("Unknown command: {}", command);
+                    error!("Unknown command: {}", command);
                 }
             }
         });

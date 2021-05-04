@@ -15,7 +15,7 @@ pub fn start(control_actor_address: Addr<ControlActor>) {
                     .try_send(CommandInput { command })
                     .unwrap();
             }
-            Err(error) => println!("Error: {}", error),
+            Err(error) => error!("Error: {}", error),
         }
     });
 }

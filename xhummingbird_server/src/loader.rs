@@ -13,7 +13,7 @@ use std::thread;
 pub fn start(storage_actor_address: Addr<StorageActor>) {
     thread::spawn(move || {
         let path = &config::snapshot();
-        println!(
+        info!(
             "Loaded {} events",
             load_from_file(path, storage_actor_address).unwrap()
         );
@@ -53,7 +53,7 @@ fn load_from_file(
 
         Ok(n)
     } else {
-        println!("{} does not exist.", path);
+        warn!("{} does not exist.", path);
         Ok(0)
     }
 }
