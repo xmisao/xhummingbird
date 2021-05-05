@@ -1,11 +1,11 @@
-use std::collections::HashMap;
-use std::collections::hash_map::DefaultHasher;
-use std::hash::Hasher;
-use std::hash::Hash;
-use std::ops::Deref;
-use std::rc::Rc;
 use crate::protos::event::Event;
 use protobuf::RepeatedField;
+use std::collections::hash_map::DefaultHasher;
+use std::collections::HashMap;
+use std::hash::Hash;
+use std::hash::Hasher;
+use std::ops::Deref;
+use std::rc::Rc;
 
 #[derive(Debug)]
 pub struct Compactor {
@@ -16,12 +16,10 @@ impl Compactor {
     pub fn new() -> Compactor {
         let strings = HashMap::new();
 
-        Compactor{
-            strings,
-        }
+        Compactor { strings }
     }
 
-    fn compact_str(&mut self, str: &String) -> Rc<String>{
+    fn compact_str(&mut self, str: &String) -> Rc<String> {
         let mut hasher = DefaultHasher::new();
         str.hash(&mut hasher);
         let hash = hasher.finish();
@@ -32,7 +30,7 @@ impl Compactor {
                 let shared_string = Rc::new(str.clone());
                 self.strings.insert(hash, shared_string.clone());
                 shared_string
-            },
+            }
         }
     }
 
@@ -56,7 +54,14 @@ impl Compactor {
 
         let timestamp = event.timestamp.clone();
 
-        CompactedEvent{level, title, message, trace, tags, timestamp}
+        CompactedEvent {
+            level,
+            title,
+            message,
+            trace,
+            tags,
+            timestamp,
+        }
     }
 }
 

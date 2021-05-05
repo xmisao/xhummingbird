@@ -5,10 +5,10 @@ use std::collections::HashMap;
 use std::convert::TryFrom;
 use std::thread;
 use std::time::{Duration, SystemTime};
-use xhummingbird_server::protos::event::Event;
 use xhummingbird_server::compactor::*;
+use xhummingbird_server::protos::event::Event;
 
-fn main(){
+fn main() {
     let mut compactor = Compactor::new();
 
     let mut compacted_events = Vec::new();

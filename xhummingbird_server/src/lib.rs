@@ -2,6 +2,7 @@
 extern crate log;
 
 pub mod actors;
+pub mod compactor;
 pub mod config;
 pub mod helper;
 pub mod loader;
@@ -11,4 +12,3 @@ pub mod store;
 pub mod tmpl_helper;
 pub mod web;
 pub mod workers;
-pub mod compactor;

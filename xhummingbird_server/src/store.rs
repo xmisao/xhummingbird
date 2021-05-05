@@ -1,6 +1,6 @@
+use crate::compactor::*;
 use crate::helper;
 use crate::protos::event::Event;
-use crate::compactor::*;
 use chrono::Duration;
 use protobuf::Message;
 use std::collections::{BTreeMap, HashMap};
@@ -101,7 +101,9 @@ impl Store {
         for event in iter {
             let event = event.1;
 
-            let v = titles.entry(event.title.deref().clone()).or_insert_with(|| 0);
+            let v = titles
+                .entry(event.title.deref().clone())
+                .or_insert_with(|| 0);
             *v += 1;
         }
 

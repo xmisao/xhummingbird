@@ -36,7 +36,10 @@ fn main() {
         NotificationActor::start_in_arbiter(&notification_arbiter, |_| notification_actor);
 
     let mut storage_arbiter = Arbiter::new();
-    let storage_actor_address = StorageActor::start_in_arbiter(&storage_arbiter, |_| StorageActor{store: Store::new()} );
+    let storage_actor_address =
+        StorageActor::start_in_arbiter(&storage_arbiter, |_| StorageActor {
+            store: Store::new(),
+        });
 
     receiver_worker::start(
         storage_actor_address.clone(),
