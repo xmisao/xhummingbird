@@ -11,16 +11,16 @@ use std::path::Path;
 use std::thread;
 
 pub fn start(storage_actor_address: Addr<StorageActor>) {
-    thread::spawn(move || {
+    actix_rt::spawn(async move {
         let path = &config::snapshot();
         info!(
             "Loaded {} events",
-            load_from_file(path, storage_actor_address).unwrap()
+            load_from_file(path, storage_actor_address).await.unwrap()
         );
     });
 }
 
-fn load_from_file(
+async fn load_from_file(
     path: &str,
     storage_actor_address: Addr<StorageActor>,
 ) -> Result<usize, io::Error> {
@@ -43,10 +43,9 @@ fn load_from_file(
 
             let event = Event::parse_from_bytes(&event_buf)?;
             storage_actor_address
-                .try_send(PutEvent {
+                .send(PutEvent {
                     event: event.clone(),
-                })
-                .ok();
+                }).await.unwrap().unwrap();
 
             n += 1;
         }
