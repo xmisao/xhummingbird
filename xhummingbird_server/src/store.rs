@@ -1,5 +1,6 @@
 use crate::helper;
 use crate::protos::event::Event;
+use crate::compactor::*;
 use chrono::Duration;
 use protobuf::Message;
 use std::collections::{BTreeMap, HashMap};
@@ -7,25 +8,28 @@ use std::convert::TryFrom;
 use std::convert::TryInto;
 use std::fs::File;
 use std::io::{self, BufWriter, Write};
+use std::ops::Deref;
 
 pub struct Store {
-    data: BTreeMap<u64, Event>,
+    data: BTreeMap<u64, CompactedEvent>,
+    compactor: Compactor,
 }
 
 impl Store {
     pub fn new() -> Store {
         Store {
             data: BTreeMap::new(),
+            compactor: Compactor::new(),
         }
     }
 
     pub fn put(&mut self, event: Event) {
         let time = helper::timestamp_u64(&event);
 
-        self.data.insert(time, event);
+        self.data.insert(time, self.compactor.compact_event(&event));
     }
 
-    pub fn head(&self, from: Option<u64>, title: Option<String>) -> Vec<&Event> {
+    pub fn head(&self, from: Option<u64>, title: Option<String>) -> Vec<Event> {
         let iter = match from {
             None => self.data.range(..).rev(),
             Some(u) => self.data.range(..u).rev(),
@@ -37,8 +41,8 @@ impl Store {
         for event in iter {
             let event = event.1;
 
-            if title == None || event.title == title.as_deref().unwrap() {
-                events.push(event);
+            if title == None || event.title.deref() == title.as_deref().unwrap() {
+                events.push(event.uncompact_event());
 
                 n += 1;
 
@@ -69,8 +73,8 @@ impl Store {
         for event in iter {
             let event = event.1;
 
-            if title == None || event.title == title.as_deref().unwrap() {
-                let event_timestamp = helper::timestamp_u64(event);
+            if title == None || event.title.deref() == title.as_deref().unwrap() {
+                let event_timestamp = helper::timestamp_u64(&event.uncompact_event());
                 let index = (event_timestamp - from) / (60 * 60 * 1_000_000_000);
 
                 if index < 168 {
@@ -97,15 +101,18 @@ impl Store {
         for event in iter {
             let event = event.1;
 
-            let v = titles.entry(event.title.clone()).or_insert_with(|| 0);
+            let v = titles.entry(event.title.deref().clone()).or_insert_with(|| 0);
             *v += 1;
         }
 
         titles
     }
 
-    pub fn get(&self, id: u64) -> Option<&Event> {
-        self.data.get(&id)
+    pub fn get(&self, id: u64) -> Option<Event> {
+        match self.data.get(&id) {
+            Some(event) => Some(event.uncompact_event()),
+            _ => None,
+        }
     }
 
     pub fn save(&self, path: &str) -> Result<usize, io::Error> {
@@ -114,7 +121,7 @@ impl Store {
         let mut n = 0;
 
         for (_, event) in &self.data {
-            let bytes = event.write_to_bytes().unwrap();
+            let bytes = event.uncompact_event().write_to_bytes().unwrap();
             let size: u32 = TryFrom::try_from(bytes.len()).unwrap();
 
             writer.write_all(&size.to_ne_bytes()).unwrap();
