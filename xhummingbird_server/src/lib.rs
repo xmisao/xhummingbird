@@ -11,3 +11,4 @@ pub mod store;
 pub mod tmpl_helper;
 pub mod web;
 pub mod workers;
+pub mod compactor;
