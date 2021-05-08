@@ -47,6 +47,7 @@ use crate::tmpl_helper;
         <tr>
           <th>Id</th>
           <th>Level</th>
+          <th>Service</th>
           <th>Title</th>
           <th>Message</th>
           <th>Timestamp</th>
@@ -56,6 +57,7 @@ use crate::tmpl_helper;
         <tr>
           <td><a href="<%= event.event_link() %>"><%= event.id %></a></td>
           <td><%= event.level %></td>
+          <td><%= event.service %></td>
           <td><a href="<%= event.events_link() %>"><%= event.title %></a></td>
           <td><%= event.message %></td>
           <td><%= event.timestamp_rfc2822 %></td>

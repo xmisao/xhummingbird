@@ -46,6 +46,7 @@ struct DisplayableEvent {
     trace: Vec<String>,
     tags: Vec<(String, String)>,
     timestamp_rfc2822: String,
+    service: String,
 }
 
 #[derive(TemplateOnce)]
@@ -78,6 +79,7 @@ impl DisplayableEvent {
                 .map(|(k, v)| (k.clone(), v.clone()))
                 .collect(),
             timestamp_rfc2822,
+            service: event.get_service().to_string(),
         }
     }
 

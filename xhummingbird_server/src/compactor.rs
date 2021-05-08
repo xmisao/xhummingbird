@@ -54,6 +54,8 @@ impl Compactor {
 
         let timestamp = event.timestamp.clone();
 
+        let service = self.compact_str(&event.service);
+
         CompactedEvent {
             level,
             title,
@@ -61,6 +63,7 @@ impl Compactor {
             trace,
             tags,
             timestamp,
+            service,
         }
     }
 }
@@ -73,6 +76,7 @@ pub struct CompactedEvent {
     pub trace: Vec<Rc<String>>,
     pub tags: HashMap<Rc<String>, Rc<String>>,
     pub timestamp: ::protobuf::SingularPtrField<::protobuf::well_known_types::Timestamp>,
+    pub service: Rc<String>,
 }
 
 impl CompactedEvent {
@@ -93,6 +97,7 @@ impl CompactedEvent {
         }
         event.set_tags(tags);
         event.set_timestamp(self.timestamp.clone().unwrap());
+        event.set_service(self.service.deref().clone());
 
         event
     }
