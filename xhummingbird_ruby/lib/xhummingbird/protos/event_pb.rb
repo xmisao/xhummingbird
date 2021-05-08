@@ -13,6 +13,7 @@ Google::Protobuf::DescriptorPool.generated_pool.build do
       repeated :trace, :string, 4
       map :tags, :string, :string, 5
       optional :timestamp, :message, 6, "google.protobuf.Timestamp"
+      optional :service, :string, 7
     end
   end
 end

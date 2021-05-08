@@ -13,6 +13,8 @@ require_relative "xhummingbird/protos/event_pb"
 module Xhummingbird
   class Error < StandardError; end
 
+  XH_SERVICE = 'XH_SERVICE'
+
   LOGGER = Logger.new(STDERR)
 
   def self.debug(*args)
@@ -27,7 +29,7 @@ module Xhummingbird
     send_trace(title: "Started", message: "Xhummingbird Ruby SDK started.", level: 0)
   end
 
-  def self.send_trace(title:, message: "", level: 1, tags: {})
+  def self.send_trace(title:, message: "", level: 1, tags: {}, service: nil)
     debug(__method__)
 
     return unless enabled?
@@ -38,13 +40,14 @@ module Xhummingbird
       message: message.to_s,
       trace: caller,
       tags: default_tags.merge(format_hash(tags)),
-      timestamp: Time.now
+      timestamp: Time.now,
+      service: service || default_service
     )
   rescue => e
     debug(e)
   end
 
-  def self.send_exception(exception, level: 2, tags: {})
+  def self.send_exception(exception, level: 2, tags: {}, service: nil)
     debug(__method__)
 
     return unless enabled?
@@ -55,7 +58,8 @@ module Xhummingbird
       message: exception.message,
       trace: exception.backtrace,
       tags: default_tags.merge(format_hash(tags)),
-      timestamp: Time.now
+      timestamp: Time.now,
+      service: service || default_service
     )
   rescue => e
     debug(e)
@@ -107,5 +111,11 @@ module Xhummingbird
     end
 
     formatted
+  end
+
+  def self.default_service
+    debug(__method__)
+
+    ENV.fetch(XH_SERVICE, "")
   end
 end
