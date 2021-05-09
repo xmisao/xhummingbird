@@ -72,7 +72,7 @@ impl Handler<StatEvents> for StorageActor {
     type Result = std::result::Result<Vec<u64>, ()>;
 
     fn handle(&mut self, msg: StatEvents, _ctx: &mut Context<Self>) -> Self::Result {
-        let stat = self.store.stat(msg.title);
+        let stat = self.store.stat(msg.title, msg.service);
 
         Ok(stat)
     }

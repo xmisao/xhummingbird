@@ -143,6 +143,7 @@ async fn events_root(info: web::Query<EventsInfo>, data: web::Data<WebState>) ->
     let stat: Vec<u64> = storage_actor
         .send(StatEvents {
             title: info.title.clone(),
+            service: info.service.clone(),
         })
         .await
         .unwrap()

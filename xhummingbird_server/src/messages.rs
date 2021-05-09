@@ -36,6 +36,7 @@ pub struct SaveSnapshot {}
 #[rtype(result = "std::result::Result<(Vec<u64>), ()>")]
 pub struct StatEvents {
     pub title: Option<String>,
+    pub service: Option<String>,
 }
 
 #[derive(Message)]

@@ -58,7 +58,7 @@ impl Store {
         events
     }
 
-    pub fn stat(&self, title: Option<String>) -> Vec<u64> {
+    pub fn stat(&self, title: Option<String>, service: Option<String>) -> Vec<u64> {
         let from_dt = chrono::Utc::now()
             .checked_sub_signed(Duration::hours(168))
             .unwrap();
@@ -77,11 +77,13 @@ impl Store {
             let event = event.1;
 
             if title == None || event.title.deref() == title.as_deref().unwrap() {
-                let event_timestamp = helper::timestamp_u64(&event.uncompact_event());
-                let index = (event_timestamp - from) / (60 * 60 * 1_000_000_000);
+                if service == None || event.service.deref() == service.as_deref().unwrap() {
+                    let event_timestamp = helper::timestamp_u64(&event.uncompact_event());
+                    let index = (event_timestamp - from) / (60 * 60 * 1_000_000_000);
 
-                if index < 168 {
-                    stat[index as usize] += 1;
+                    if index < 168 {
+                        stat[index as usize] += 1;
+                    }
                 }
             }
         }
