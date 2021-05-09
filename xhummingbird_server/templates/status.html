@@ -7,15 +7,15 @@
   </head>
   <body>
     <div id="breadcrumb">
-      <img width="16px" height="16px" src="/static/img/logo.svg"> xHummingbird
+      <img width="16px" height="16px" src="/static/img/logo.svg"> <a href="/">xHummingbird</a> &gt; status
     </div>
     <div id="main-pane">
-      <h1>xHummingbird</h1>
-      <ul>
-        <li><a href="/events">Events</a></li>
-        <li><a href="/config">Config</a></li>
-        <li><a href="/status">Status</a></li>
-      </ul>
+      <h1>Status</h1>
+      <table>
+        <tr><th>Item</th><th>Value</th></tr>
+        <tr><td>Started</td><td><%= started.to_rfc3339() %></td></tr>
+        <tr><td>Num of events</td><td><%= num_of_events %></td></tr>
+      </table>
     </div>
   </body>
 </html>

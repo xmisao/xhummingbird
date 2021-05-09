@@ -155,4 +155,8 @@ impl Store {
 
         Ok(n)
     }
+
+    pub fn count(&self) -> u64 {
+        self.data.len().try_into().unwrap()
+    }
 }

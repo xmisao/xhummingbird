@@ -7,7 +7,7 @@ use std::collections::HashMap;
 
 use actix::prelude::*;
 use actix_web::{get, web, App, HttpResponse, HttpServer, Responder};
-use chrono::{TimeZone, Utc};
+use chrono::{TimeZone, Utc, DateTime};
 use sailfish::TemplateOnce;
 use serde::Deserialize;
 use serde_json::json;
@@ -19,11 +19,13 @@ pub fn start(storage_actor_address: Addr<StorageActor>) {
         App::new()
             .data(WebState {
                 storage_actor: storage_actor_address.clone(),
+                started: Utc::now(),
             })
             .service(root)
             .service(events_root)
             .service(event_item)
             .service(config)
+            .service(status)
             .service(actix_files::Files::new("/static", "./static"))
     })
     .bind(address)
@@ -98,6 +100,7 @@ impl DisplayableEvent {
 
 struct WebState {
     storage_actor: Addr<StorageActor>,
+    started: DateTime<Utc>,
 }
 
 #[get("/")]
@@ -220,9 +223,25 @@ struct NotFoundTemplate {
 #[template(path = "config.html")]
 struct ConfigTemplate {}
 
+#[derive(TemplateOnce)]
+#[template(path = "status.html")]
+struct StatusTemplate {
+    started: DateTime<Utc>,
+    num_of_events: u64,
+}
+
 #[get("/config")]
 async fn config() -> impl Responder {
     let tmpl = ConfigTemplate {};
     let body = tmpl.render_once().unwrap();
+    HttpResponse::Ok().content_type("text/html").body(body)
+}
+
+#[get("/status")]
+async fn status(data: web::Data<WebState>) -> impl Responder {
+    let num_of_events = data.storage_actor.clone().send(CountEvents {}).await.unwrap().unwrap();
+    let tmpl = StatusTemplate {started: data.started, num_of_events};
+    let body = tmpl.render_once().unwrap();
+
     HttpResponse::Ok().content_type("text/html").body(body)
 }

@@ -56,3 +56,7 @@ pub struct EventSummary {
 #[derive(Message)]
 #[rtype(result = "std::result::Result<(), ()>")]
 pub struct Stop {}
+
+#[derive(Message)]
+#[rtype(result = "std::result::Result<u64, ()>")]
+pub struct CountEvents {}

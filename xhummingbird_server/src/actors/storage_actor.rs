@@ -97,3 +97,11 @@ impl Handler<Stop> for StorageActor {
         Ok(())
     }
 }
+
+impl Handler<CountEvents> for StorageActor {
+    type Result = std::result::Result<(u64), ()>;
+
+    fn handle(&mut self, _msg: CountEvents, ctx: &mut Context<Self>) -> Self::Result {
+        Ok(self.store.count())
+    }
+}
