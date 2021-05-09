@@ -1,6 +1,7 @@
 use crate::compactor::*;
 use crate::helper;
 use crate::protos::event::Event;
+use crate::messages::EventSummary;
 use chrono::Duration;
 use protobuf::Message;
 use std::collections::{BTreeMap, HashMap};
@@ -86,7 +87,7 @@ impl Store {
         stat
     }
 
-    pub fn titles(&self) -> HashMap<String, u64> {
+    pub fn titles(&self) -> Vec<EventSummary> {
         let from_dt = chrono::Utc::now()
             .checked_sub_signed(Duration::hours(168))
             .unwrap();
@@ -102,12 +103,19 @@ impl Store {
             let event = event.1;
 
             let v = titles
-                .entry(event.title.deref().clone())
+                .entry((event.service.deref().clone(), event.title.deref().clone()))
                 .or_insert_with(|| 0);
             *v += 1;
         }
 
-        titles
+        let mut summary = Vec::new();
+
+        for ((service, title), count) in titles {
+            let s = EventSummary{service, title, count};
+            summary.push(s);
+        }
+
+        summary
     }
 
     pub fn get(&self, id: u64) -> Option<Event> {

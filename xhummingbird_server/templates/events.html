@@ -21,12 +21,12 @@ use crate::tmpl_helper;
       <h1>Events</h1>
       <h2>Frequency</h1>
       <canvas id="frequency-chart" width="400" height="40"></canvas>
-      <% if titles != None { %>
+      <% if titles.is_some() { %>
       <h2>Summary</h1>
       <table>
-        <tr><th>Title</th><th>Num of events</th></tr>
-      <% for (k, v) in titles.unwrap() { %>
-      <tr><td><a href="<%= tmpl_helper::title_to_title_link(&k) %>"><%= k %></a></td><td><%= v %></td></tr>
+        <tr><th>Service</th><th>Title</th><th>Num of events</th></tr>
+      <% for s in titles.unwrap() { %>
+      <tr><td><%= s.service %></td><td><a href="<%= tmpl_helper::title_to_title_link(&s.title) %>"><%= s.title %></a></td><td><%= s.count %></td></tr>
       <% } %>
       </table>
       <% } %>

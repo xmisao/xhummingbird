@@ -57,7 +57,7 @@ struct EventsTemplate {
     from: Option<u64>,
     title: Option<String>,
     stat_array: String,
-    titles: Option<HashMap<String, u64>>,
+    titles: Option<Vec<EventSummary>>,
 }
 
 impl DisplayableEvent {
@@ -149,7 +149,7 @@ async fn events_root(info: web::Query<EventsInfo>, data: web::Data<WebState>) ->
     let json_stat = json!(stat);
     let stat_array = json_stat.to_string();
 
-    let titles: Option<HashMap<String, u64>> = match info.title {
+    let titles = match info.title {
         Some(_) => None,
         None => Some(storage_actor.send(GetTitles {}).await.unwrap().unwrap()),
     };

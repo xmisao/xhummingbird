@@ -79,7 +79,7 @@ impl Handler<StatEvents> for StorageActor {
 }
 
 impl Handler<GetTitles> for StorageActor {
-    type Result = std::result::Result<HashMap<String, u64>, ()>;
+    type Result = std::result::Result<Vec<EventSummary>, ()>;
 
     fn handle(&mut self, _msg: GetTitles, _ctx: &mut Context<Self>) -> Self::Result {
         let titles = self.store.titles();

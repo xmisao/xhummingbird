@@ -38,8 +38,15 @@ pub struct StatEvents {
 }
 
 #[derive(Message)]
-#[rtype(result = "std::result::Result<(HashMap<String, u64>), ()>")]
+#[rtype(result = "std::result::Result<Vec<EventSummary>, ()>")]
 pub struct GetTitles {}
+
+#[derive(Debug)]
+pub struct EventSummary {
+    pub service: String,
+    pub title: String,
+    pub count: u64,
+}
 
 #[derive(Message)]
 #[rtype(result = "std::result::Result<(), ()>")]
