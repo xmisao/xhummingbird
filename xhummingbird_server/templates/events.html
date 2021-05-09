@@ -19,6 +19,21 @@ use crate::tmpl_helper;
     </div>
     <div id="main-pane">
       <h1>Events</h1>
+      <% if title != None || service != None { %>
+      <div>
+        Filter condition:
+      </div>
+      <% } %>
+      <% if service != None { %>
+      <div>
+        service = '<%= service.unwrap() %>'
+      </div>
+      <% } %>
+      <% if title != None { %>
+      <div>
+        title = '<%= title.unwrap() %>'
+      </div>
+      <% } %>
       <h2>Frequency</h1>
       <canvas id="frequency-chart" width="400" height="40"></canvas>
       <% if titles.is_some() { %>
@@ -38,11 +53,6 @@ use crate::tmpl_helper;
         <a href="/events">Show latest events.</a>
         <% } %>
       </div>
-      <% if title != None { %>
-      <div>
-        Filter: title = '<%= title.unwrap() %>'
-      </div>
-      <% } %>
       <table>
         <tr>
           <th>Id</th>

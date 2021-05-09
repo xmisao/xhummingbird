@@ -56,6 +56,7 @@ struct EventsTemplate {
     next_link: Option<String>,
     from: Option<u64>,
     title: Option<String>,
+    service: Option<String>,
     stat_array: String,
     titles: Option<Vec<EventSummary>>,
 }
@@ -158,6 +159,7 @@ async fn events_root(info: web::Query<EventsInfo>, data: web::Data<WebState>) ->
         next_link,
         from: info.from,
         title: info.title.clone(),
+        service: info.service.clone(),
         stat_array,
         titles,
     };
