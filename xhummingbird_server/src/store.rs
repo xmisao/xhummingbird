@@ -91,7 +91,7 @@ impl Store {
         stat
     }
 
-    pub fn titles(&self) -> Vec<EventSummary> {
+    pub fn titles(&self, filter_title: Option<String>, filter_service: Option<String>) -> Vec<EventSummary> {
         let from_dt = chrono::Utc::now()
             .checked_sub_signed(Duration::hours(168))
             .unwrap();
@@ -115,8 +115,12 @@ impl Store {
         let mut summary = Vec::new();
 
         for ((service, title), count) in titles {
-            let s = EventSummary{service, title, count};
-            summary.push(s);
+            if filter_title == None || filter_title.as_deref().unwrap() == title {
+                if filter_service == None || filter_service.as_deref().unwrap() == service {
+                    let s = EventSummary{service, title, count};
+                    summary.push(s);
+                }
+            }
         }
 
         summary

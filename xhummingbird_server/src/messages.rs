@@ -41,7 +41,10 @@ pub struct StatEvents {
 
 #[derive(Message)]
 #[rtype(result = "std::result::Result<Vec<EventSummary>, ()>")]
-pub struct GetTitles {}
+pub struct GetTitles {
+    pub title: Option<String>,
+    pub service: Option<String>,
+}
 
 #[derive(Debug)]
 pub struct EventSummary {

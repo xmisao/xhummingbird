@@ -50,7 +50,7 @@ impl Handler<CommandInput> for ControlActor {
                 }
                 "titles" => {
                     println!("Titles:");
-                    let titles = storage_actor_address.send(GetTitles {}).await.unwrap();
+                    let titles = storage_actor_address.send(GetTitles {title: None, service: None}).await.unwrap();
                     println!("{:?}", titles);
                 }
                 "load" => {

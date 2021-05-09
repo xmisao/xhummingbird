@@ -151,10 +151,7 @@ async fn events_root(info: web::Query<EventsInfo>, data: web::Data<WebState>) ->
     let json_stat = json!(stat);
     let stat_array = json_stat.to_string();
 
-    let titles = match info.title {
-        Some(_) => None,
-        None => Some(storage_actor.send(GetTitles {}).await.unwrap().unwrap()),
-    };
+    let titles = Some(storage_actor.send(GetTitles {title: info.title.clone(), service: info.service.clone()}).await.unwrap().unwrap());
 
     let tmpl = EventsTemplate {
         events: displayable_events,
