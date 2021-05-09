@@ -11,10 +11,15 @@ use crate::tmpl_helper;
   <body>
     <div id="breadcrumb">
       <% let title2 = title.clone(); %>
-      <% if title2 != None { %>
-        <img width="16px" height="16px" src="/static/img/logo.svg"> <a href="/">xHummingbird</a> &gt; <a href="/events">Events</a> &gt; Filter: title = '<%= title2.unwrap() %>'
+      <% let service2 = service.clone(); %>
+      <% if title2 != None && service2 != None { %>
+      <img width="16px" height="16px" src="/static/img/logo.svg"> <a href="/">xHummingbird</a> &gt; <a href="/events">Events</a> &gt; Filter: service = '<%= service2.unwrap() %>', title = '<%= title2.unwrap() %>' 
+      <% } else if title2 != None { %>
+      <img width="16px" height="16px" src="/static/img/logo.svg"> <a href="/">xHummingbird</a> &gt; <a href="/events">Events</a> &gt; Filter: title = '<%= title2.unwrap() %>' 
+      <% } else if service2 != None { %>
+      <img width="16px" height="16px" src="/static/img/logo.svg"> <a href="/">xHummingbird</a> &gt; <a href="/events">Events</a> &gt; Filter: service = '<%= service2.unwrap() %>' 
       <% } else {%>
-        <img width="16px" height="16px" src="/static/img/logo.svg"> <a href="/">xHummingbird</a> &gt; Events
+      <img width="16px" height="16px" src="/static/img/logo.svg"> <a href="/">xHummingbird</a> &gt; Events
       <% } %>
     </div>
     <div id="main-pane">
@@ -26,12 +31,12 @@ use crate::tmpl_helper;
       <% } %>
       <% if service != None { %>
       <div>
-        service = '<%= service.unwrap() %>'
+        service = '<%= service.clone().unwrap() %>'
       </div>
       <% } %>
       <% if title != None { %>
       <div>
-        title = '<%= title.unwrap() %>'
+        title = '<%= title.clone().unwrap() %>'
       </div>
       <% } %>
       <h2>Frequency</h1>
@@ -41,7 +46,11 @@ use crate::tmpl_helper;
       <table>
         <tr><th>Service</th><th>Title</th><th>Num of events</th></tr>
       <% for s in titles.unwrap() { %>
-      <tr><td><%= s.service %></td><td><a href="<%= tmpl_helper::title_to_title_link(&s.title) %>"><%= s.title %></a></td><td><%= s.count %></td></tr>
+      <tr>
+        <td><a href="<%= tmpl_helper::filter_link(title.clone(), Some(s.service.clone())) %>"><%= s.service %></a></td>
+        <td><a href="<%= tmpl_helper::filter_link(Some(s.title.clone()), service.clone()) %>"><%= s.title %></a></td>
+        <td><%= s.count %></td>
+      </tr>
       <% } %>
       </table>
       <% } %>
@@ -67,8 +76,8 @@ use crate::tmpl_helper;
         <tr>
           <td><a href="<%= event.event_link() %>"><%= event.id %></a></td>
           <td><%= event.level %></td>
-          <td><%= event.service %></td>
-          <td><a href="<%= event.events_link() %>"><%= event.title %></a></td>
+          <td><a href="<%= tmpl_helper::filter_link(title.clone(), Some(event.service.clone())) %>"><%= event.service %></a></td>
+          <td><a href="<%= tmpl_helper::filter_link(Some(event.title.clone()), service.clone()) %>"><%= event.title %></a></td>
           <td><%= event.message %></td>
           <td><%= event.timestamp_rfc2822 %></td>
         </tr>

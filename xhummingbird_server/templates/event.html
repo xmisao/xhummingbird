@@ -1,3 +1,6 @@
+<%
+use crate::tmpl_helper;
+%>
 <html>
   <head>
     <title>xHummingbird</title>
@@ -15,8 +18,8 @@
         <table>
           <tr><th>Id</th><td><%= event.id %></td></tr>
           <tr><th>Level</th><td><%= event.level %></td></tr>
-          <tr><th>Service</th><td><%= event.service %></td></tr>
-          <tr><th>Title</th><td><a href="<%= event.events_link() %>"><%= event.title %></a></td></tr>
+          <tr><th>Service</th><td><a href="<%= tmpl_helper::filter_link(None, Some(event.service.clone())) %>"><%= event.service %></a></td></tr>
+          <tr><th>Title</th><td><a href="<%= tmpl_helper::filter_link(Some(event.title.clone()), None) %>"><%= event.title %></a></td></tr>
           <tr><th>Message</th><td><%= event.message %></td></tr>
           <tr><th>Trace</th><td>
             <% for t in event.trace { %>
