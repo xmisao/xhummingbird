@@ -12,6 +12,7 @@ pub struct PutEvent {
 #[rtype(result = "std::result::Result<(Vec<Event>), ()>")]
 pub struct HeadEvents {
     pub from: Option<u64>,
+    pub service: Option<String>,
     pub title: Option<String>,
 }
 

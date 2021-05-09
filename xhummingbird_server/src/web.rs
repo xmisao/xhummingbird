@@ -113,6 +113,7 @@ async fn events_root(info: web::Query<EventsInfo>, data: web::Data<WebState>) ->
         .send(HeadEvents {
             from: info.from,
             title: info.title.clone(),
+            service: info.service.clone(),
         })
         .await
         .unwrap()
@@ -169,6 +170,7 @@ async fn events_root(info: web::Query<EventsInfo>, data: web::Data<WebState>) ->
 #[derive(Deserialize)]
 struct EventsInfo {
     from: Option<u64>,
+    service: Option<String>,
     title: Option<String>,
 }
 

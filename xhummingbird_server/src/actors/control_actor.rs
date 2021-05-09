@@ -30,6 +30,7 @@ impl Handler<CommandInput> for ControlActor {
                         .send(HeadEvents {
                             from: None,
                             title: None,
+                            service: None,
                         })
                         .await
                         .unwrap();

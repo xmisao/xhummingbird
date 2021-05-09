@@ -33,7 +33,7 @@ impl Handler<HeadEvents> for StorageActor {
     fn handle(&mut self, msg: HeadEvents, _ctx: &mut Context<Self>) -> Self::Result {
         let mut events = Vec::new();
 
-        for event in self.store.head(msg.from, msg.title) {
+        for event in self.store.head(msg.from, msg.title, msg.service) {
             events.push(event.clone());
         }
 

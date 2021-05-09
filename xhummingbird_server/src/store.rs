@@ -30,7 +30,7 @@ impl Store {
         self.data.insert(time, self.compactor.compact_event(&event));
     }
 
-    pub fn head(&self, from: Option<u64>, title: Option<String>) -> Vec<Event> {
+    pub fn head(&self, from: Option<u64>, title: Option<String>, service: Option<String>) -> Vec<Event> {
         let iter = match from {
             None => self.data.range(..).rev(),
             Some(u) => self.data.range(..u).rev(),
@@ -43,12 +43,14 @@ impl Store {
             let event = event.1;
 
             if title == None || event.title.deref() == title.as_deref().unwrap() {
-                events.push(event.uncompact_event());
+                if service == None || event.service.deref() == service.as_deref().unwrap() {
+                    events.push(event.uncompact_event());
 
-                n += 1;
+                    n += 1;
 
-                if n > 100 {
-                    break;
+                    if n > 100 {
+                        break;
+                    }
                 }
             }
         }
