@@ -28,16 +28,17 @@ use crate::tmpl_helper;
       <div>
         Filter condition:
       </div>
-      <% } %>
       <% if service != None { %>
       <div>
-        service = '<%= service.clone().unwrap() %>'
+        service = '<%= service.clone().unwrap() %>' <a href="<%= tmpl_helper::filter_link(title.clone(), None) %>">[X]</a>
       </div>
       <% } %>
       <% if title != None { %>
       <div>
-        title = '<%= title.clone().unwrap() %>'
+        title = '<%= title.clone().unwrap() %>' <a href="<%= tmpl_helper::filter_link(None, service.clone()) %>">[X]</a>
       </div>
+      <% } %>
+      <div><a href="/events">Clear filters.</a></div>
       <% } %>
       <h2>Frequency</h1>
       <canvas id="frequency-chart" width="400" height="40"></canvas>
