@@ -1,7 +1,7 @@
 use crate::compactor::*;
 use crate::helper;
-use crate::protos::event::Event;
 use crate::messages::EventSummary;
+use crate::protos::event::Event;
 use chrono::Duration;
 use protobuf::Message;
 use std::collections::{BTreeMap, HashMap};
@@ -30,7 +30,12 @@ impl Store {
         self.data.insert(time, self.compactor.compact_event(&event));
     }
 
-    pub fn head(&self, from: Option<u64>, title: Option<String>, service: Option<String>) -> Vec<Event> {
+    pub fn head(
+        &self,
+        from: Option<u64>,
+        title: Option<String>,
+        service: Option<String>,
+    ) -> Vec<Event> {
         let iter = match from {
             None => self.data.range(..).rev(),
             Some(u) => self.data.range(..u).rev(),
@@ -91,7 +96,11 @@ impl Store {
         stat
     }
 
-    pub fn titles(&self, filter_title: Option<String>, filter_service: Option<String>) -> Vec<EventSummary> {
+    pub fn titles(
+        &self,
+        filter_title: Option<String>,
+        filter_service: Option<String>,
+    ) -> Vec<EventSummary> {
         let from_dt = chrono::Utc::now()
             .checked_sub_signed(Duration::hours(168))
             .unwrap();
@@ -137,7 +146,12 @@ impl Store {
                         count += n
                     }
 
-                    let s = EventSummary{service: service.clone(), title: title.clone(), count, trend};
+                    let s = EventSummary {
+                        service: service.clone(),
+                        title: title.clone(),
+                        count,
+                        trend,
+                    };
                     summary.push(s);
                 }
             }

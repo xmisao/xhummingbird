@@ -45,7 +45,10 @@ async fn load_from_file(
             storage_actor_address
                 .send(PutEvent {
                     event: event.clone(),
-                }).await.unwrap().unwrap();
+                })
+                .await
+                .unwrap()
+                .unwrap();
 
             n += 1;
         }

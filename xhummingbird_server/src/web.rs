@@ -7,7 +7,7 @@ use std::collections::HashMap;
 
 use actix::prelude::*;
 use actix_web::{get, web, App, HttpResponse, HttpServer, Responder};
-use chrono::{TimeZone, Utc, DateTime};
+use chrono::{DateTime, TimeZone, Utc};
 use sailfish::TemplateOnce;
 use serde::Deserialize;
 use serde_json::json;
@@ -155,7 +155,16 @@ async fn events_root(info: web::Query<EventsInfo>, data: web::Data<WebState>) ->
     let json_stat = json!(stat);
     let stat_array = json_stat.to_string();
 
-    let titles = Some(storage_actor.send(GetTitles {title: info.title.clone(), service: info.service.clone()}).await.unwrap().unwrap());
+    let titles = Some(
+        storage_actor
+            .send(GetTitles {
+                title: info.title.clone(),
+                service: info.service.clone(),
+            })
+            .await
+            .unwrap()
+            .unwrap(),
+    );
 
     let tmpl = EventsTemplate {
         events: displayable_events,
@@ -239,8 +248,17 @@ async fn config() -> impl Responder {
 
 #[get("/status")]
 async fn status(data: web::Data<WebState>) -> impl Responder {
-    let num_of_events = data.storage_actor.clone().send(CountEvents {}).await.unwrap().unwrap();
-    let tmpl = StatusTemplate {started: data.started, num_of_events};
+    let num_of_events = data
+        .storage_actor
+        .clone()
+        .send(CountEvents {})
+        .await
+        .unwrap()
+        .unwrap();
+    let tmpl = StatusTemplate {
+        started: data.started,
+        num_of_events,
+    };
     let body = tmpl.render_once().unwrap();
 
     HttpResponse::Ok().content_type("text/html").body(body)

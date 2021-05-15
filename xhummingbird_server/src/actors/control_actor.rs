@@ -43,14 +43,23 @@ impl Handler<CommandInput> for ControlActor {
                 "stat" => {
                     println!("Stat:");
                     let stat = storage_actor_address
-                        .send(StatEvents { title: None, service: None })
+                        .send(StatEvents {
+                            title: None,
+                            service: None,
+                        })
                         .await
                         .unwrap();
                     println!("{:?}", stat);
                 }
                 "titles" => {
                     println!("Titles:");
-                    let titles = storage_actor_address.send(GetTitles {title: None, service: None}).await.unwrap();
+                    let titles = storage_actor_address
+                        .send(GetTitles {
+                            title: None,
+                            service: None,
+                        })
+                        .await
+                        .unwrap();
                     println!("{:?}", titles);
                 }
                 "load" => {
