@@ -51,6 +51,7 @@ pub struct EventSummary {
     pub service: String,
     pub title: String,
     pub count: u64,
+    pub trend: Vec<u64>,
 }
 
 #[derive(Message)]

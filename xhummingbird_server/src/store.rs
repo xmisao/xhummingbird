@@ -106,18 +106,38 @@ impl Store {
         for event in iter {
             let event = event.1;
 
-            let v = titles
-                .entry((event.service.deref().clone(), event.title.deref().clone()))
-                .or_insert_with(|| 0);
-            *v += 1;
+            let key = (event.service.deref().clone(), event.title.deref().clone());
+
+            if !titles.contains_key(&key) {
+                let mut stat = Vec::new();
+                for _ in 0..42 {
+                    stat.push(0);
+                }
+
+                let key = key.clone();
+                titles.insert(key, stat);
+            }
+
+            let trend = titles.get_mut(&key).unwrap();
+
+            let event_timestamp = helper::timestamp_u64(&event.uncompact_event());
+            let index = (event_timestamp - from) / (60 * 60 * 1_000_000_000 * 4);
+            if index < 42 {
+                trend[index as usize] += 1;
+            }
         }
 
         let mut summary = Vec::new();
 
-        for ((service, title), count) in titles {
+        for ((service, title), trend) in titles {
             if filter_title == None || filter_title.as_deref().unwrap() == title {
                 if filter_service == None || filter_service.as_deref().unwrap() == service {
-                    let s = EventSummary{service, title, count};
+                    let mut count = 0;
+                    for n in &trend {
+                        count += n
+                    }
+
+                    let s = EventSummary{service: service.clone(), title: title.clone(), count, trend};
                     summary.push(s);
                 }
             }

@@ -63,3 +63,28 @@ td.no-data {
 canvas {
   max-width: 90%;
 }
+
+.trend0 {
+  color: transparent;
+  font-weight: bold;
+}
+
+.trend1{
+  color: #97a199;
+  font-weight: bold;
+}
+
+.trend2 {
+  color: #8daa93;
+  font-weight: bold;
+}
+
+.trend3 {
+  color: #7eb98b;
+  font-weight: bold;
+}
+
+.trend4 {
+  color: #6acd7f;
+  font-weight: bold;
+}

@@ -45,12 +45,17 @@ use crate::tmpl_helper;
       <% if titles.is_some() { %>
       <h2>Summary</h1>
       <table>
-        <tr><th>Service</th><th>Title</th><th>Num of events</th></tr>
+        <tr><th>Service</th><th>Title</th><th>Num of events</th><th colspan="42">Trend</th></tr>
       <% for s in titles.unwrap() { %>
       <tr>
         <td><a href="<%= tmpl_helper::filter_link(title.clone(), Some(s.service.clone())) %>"><%= s.service %></a></td>
         <td><a href="<%= tmpl_helper::filter_link(Some(s.title.clone()), service.clone()) %>"><%= s.title %></a></td>
         <td><%= s.count %></td>
+        <% for n in s.trend { %>
+        <td>
+          <span class="<%= tmpl_helper::color_class(n) %>">#</span>
+        </td>
+        <% } %>
       </tr>
       <% } %>
       </table>
