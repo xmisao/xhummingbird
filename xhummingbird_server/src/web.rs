@@ -155,16 +155,19 @@ async fn events_root(info: web::Query<EventsInfo>, data: web::Data<WebState>) ->
     let json_stat = json!(stat);
     let stat_array = json_stat.to_string();
 
-    let titles = Some(
-        storage_actor
-            .send(GetTitles {
-                title: info.title.clone(),
-                service: info.service.clone(),
-            })
-            .await
-            .unwrap()
-            .unwrap(),
-    );
+    let mut titles = storage_actor
+        .send(GetTitles {
+            title: info.title.clone(),
+            service: info.service.clone(),
+        })
+    .await
+        .unwrap()
+        .unwrap();
+
+    titles.sort_by(|a, b| a.latest_timestamp.partial_cmp(&b.latest_timestamp).unwrap());
+    titles.reverse();
+
+    let titles = Some(titles);
 
     let tmpl = EventsTemplate {
         events: displayable_events,

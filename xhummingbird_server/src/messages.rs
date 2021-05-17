@@ -1,6 +1,7 @@
 use crate::protos::event::Event;
 use actix::prelude::*;
 use std::collections::HashMap;
+use chrono::{DateTime, Utc};
 
 #[derive(Message)]
 #[rtype(result = "std::result::Result<(), ()>")]
@@ -52,6 +53,7 @@ pub struct EventSummary {
     pub title: String,
     pub count: u64,
     pub trend: Vec<u64>,
+    pub latest_timestamp: DateTime<Utc>,
 }
 
 #[derive(Message)]

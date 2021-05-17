@@ -2,7 +2,7 @@ use crate::compactor::*;
 use crate::helper;
 use crate::messages::EventSummary;
 use crate::protos::event::Event;
-use chrono::Duration;
+use chrono::{Duration, DateTime, NaiveDateTime, Utc};
 use protobuf::Message;
 use std::collections::{BTreeMap, HashMap};
 use std::convert::TryFrom;
@@ -108,9 +108,10 @@ impl Store {
         let nsec: u64 = from_dt.timestamp_subsec_nanos().try_into().unwrap();
         let from: u64 = sec * 1_000_000_000 + nsec;
 
-        let iter = self.data.range(from..).rev();
+        let iter = self.data.range(from..);
 
         let mut titles = HashMap::new();
+        let mut latest_timestamps = HashMap::new();
 
         for event in iter {
             let event = event.1;
@@ -134,6 +135,8 @@ impl Store {
             if index < 42 {
                 trend[index as usize] += 1;
             }
+
+            latest_timestamps.insert(key, Store::convert_timestamp(&event.timestamp.clone().unwrap()));
         }
 
         let mut summary = Vec::new();
@@ -146,11 +149,15 @@ impl Store {
                         count += n
                     }
 
+                    let key = (service.clone(), title.clone());
+                    let latest_timestamp = latest_timestamps.remove(&key).unwrap();
+
                     let s = EventSummary {
                         service: service.clone(),
                         title: title.clone(),
                         count,
                         trend,
+                        latest_timestamp,
                     };
                     summary.push(s);
                 }
@@ -192,5 +199,12 @@ impl Store {
 
     pub fn count(&self) -> u64 {
         self.data.len().try_into().unwrap()
+    }
+
+    fn convert_timestamp(timestamp: &protobuf::well_known_types::Timestamp) -> DateTime<Utc> {
+        DateTime::<Utc>::from_utc(
+            NaiveDateTime::from_timestamp(timestamp.seconds, timestamp.nanos.try_into().unwrap()),
+            Utc
+        )
     }
 }
