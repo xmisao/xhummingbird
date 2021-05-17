@@ -28,10 +28,10 @@ fn main() {
     );
 
     let mut notification_arbiter = Arbiter::new();
-    let notification_actor = NotificationActor {
+    let notification_actor = NotificationActor::new(
         slack_incoming_webhook_endpoint,
         notification_threshold,
-    };
+    );
     let notification_actor_address =
         NotificationActor::start_in_arbiter(&notification_arbiter, |_| notification_actor);
 
