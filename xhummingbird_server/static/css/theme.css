@@ -70,21 +70,25 @@ canvas {
 }
 
 .trend1{
-  color: #97a199;
+  color: rgba(106,205,127,0.3);
   font-weight: bold;
 }
 
 .trend2 {
-  color: #8daa93;
+  color: rgba(106,205,127,0.5);
   font-weight: bold;
 }
 
 .trend3 {
-  color: #7eb98b;
+  color: rgba(106,205,127,0.8);
   font-weight: bold;
 }
 
 .trend4 {
-  color: #6acd7f;
+  color: rgba(106,205,127,1);
   font-weight: bold;
+}
+
+.right {
+  text-align: right;
 }

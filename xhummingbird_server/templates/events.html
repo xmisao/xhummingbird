@@ -50,7 +50,7 @@ use crate::tmpl_helper;
       <tr>
         <td><a href="<%= tmpl_helper::filter_link(title.clone(), Some(s.service.clone())) %>"><%= s.service %></a></td>
         <td><a href="<%= tmpl_helper::filter_link(Some(s.title.clone()), service.clone()) %>"><%= s.title %></a></td>
-        <td><%= s.count %></td>
+        <td class="right"><%= s.count %></td>
         <td><%= s.latest_timestamp.to_rfc2822() %></td>
         <% for n in s.trend { %>
         <td>
