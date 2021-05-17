@@ -1,7 +1,7 @@
 use crate::protos::event::Event;
 use actix::prelude::*;
-use std::collections::HashMap;
 use chrono::{DateTime, Utc};
+use std::collections::HashMap;
 
 #[derive(Message)]
 #[rtype(result = "std::result::Result<(), ()>")]

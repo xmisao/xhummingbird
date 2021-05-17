@@ -160,7 +160,7 @@ async fn events_root(info: web::Query<EventsInfo>, data: web::Data<WebState>) ->
             title: info.title.clone(),
             service: info.service.clone(),
         })
-    .await
+        .await
         .unwrap()
         .unwrap();
 

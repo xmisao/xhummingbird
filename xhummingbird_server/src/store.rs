@@ -2,7 +2,7 @@ use crate::compactor::*;
 use crate::helper;
 use crate::messages::EventSummary;
 use crate::protos::event::Event;
-use chrono::{Duration, DateTime, NaiveDateTime, Utc};
+use chrono::{DateTime, Duration, NaiveDateTime, Utc};
 use protobuf::Message;
 use std::collections::{BTreeMap, HashMap};
 use std::convert::TryFrom;
@@ -136,7 +136,10 @@ impl Store {
                 trend[index as usize] += 1;
             }
 
-            latest_timestamps.insert(key, Store::convert_timestamp(&event.timestamp.clone().unwrap()));
+            latest_timestamps.insert(
+                key,
+                Store::convert_timestamp(&event.timestamp.clone().unwrap()),
+            );
         }
 
         let mut summary = Vec::new();
@@ -204,7 +207,7 @@ impl Store {
     fn convert_timestamp(timestamp: &protobuf::well_known_types::Timestamp) -> DateTime<Utc> {
         DateTime::<Utc>::from_utc(
             NaiveDateTime::from_timestamp(timestamp.seconds, timestamp.nanos.try_into().unwrap()),
-            Utc
+            Utc,
         )
     }
 }
