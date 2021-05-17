@@ -1,17 +1,20 @@
 use crate::messages::*;
 use actix::prelude::*;
+use chrono::{DateTime, Utc};
 use std::collections::{HashMap, HashSet};
 use std::time::Duration;
-use chrono::{DateTime, Utc};
 
 pub struct NotificationActor {
     pub slack_incoming_webhook_endpoint: String,
     pub notification_threshold: u32,
-    counter: HashMap<(String, String), NotificationEntry>
+    counter: HashMap<(String, String), NotificationEntry>,
 }
 
 impl NotificationActor {
-    pub fn new(slack_incoming_webhook_endpoint: String, notification_threshold: u32) -> NotificationActor {
+    pub fn new(
+        slack_incoming_webhook_endpoint: String,
+        notification_threshold: u32,
+    ) -> NotificationActor {
         NotificationActor {
             slack_incoming_webhook_endpoint,
             notification_threshold,
@@ -39,7 +42,15 @@ impl Handler<PutEvent> for NotificationActor {
 
         if event.level >= self.notification_threshold {
             let key = (event.service.clone(), event.title.clone());
-            if !self.counter.contains_key(&key) || self.counter.get(&key).unwrap().notified_at.signed_duration_since(Utc::now()) > notification_interval {
+            if !self.counter.contains_key(&key)
+                || self
+                    .counter
+                    .get(&key)
+                    .unwrap()
+                    .notified_at
+                    .signed_duration_since(Utc::now())
+                    > notification_interval
+            {
                 self.counter.insert(key.clone(), NotificationEntry::new());
             }
 
@@ -73,7 +84,7 @@ impl Handler<PutEvent> for NotificationActor {
                     Ok(_) => {
                         entry.notified_at = Utc::now();
                         ()
-                    },
+                    }
                     Err(x) => error!("Notification error: {:?}", x),
                 }
             } else {
