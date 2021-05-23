@@ -35,7 +35,7 @@ impl Handler<PutEvent> for NotificationActor {
     type Result = std::result::Result<(), ()>;
 
     fn handle(&mut self, msg: PutEvent, _ctx: &mut Context<Self>) -> Self::Result {
-        let notification_interval = chrono::Duration::seconds(60 * 60);
+        let notification_interval = chrono::Duration::seconds(-1 * 60 * 60);
         let notification_count: HashSet<u64> = vec![1, 10, 100, 1000, 10000].into_iter().collect();
 
         let event = msg.event;
