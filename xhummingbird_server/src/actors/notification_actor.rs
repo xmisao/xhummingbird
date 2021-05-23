@@ -49,7 +49,7 @@ impl Handler<PutEvent> for NotificationActor {
                     .unwrap()
                     .notified_at
                     .signed_duration_since(Utc::now())
-                    > notification_interval
+                    < notification_interval
             {
                 self.counter.insert(key.clone(), NotificationEntry::new());
             }
