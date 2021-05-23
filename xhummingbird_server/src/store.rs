@@ -7,6 +7,7 @@ use protobuf::Message;
 use std::collections::{BTreeMap, HashMap};
 use std::convert::TryFrom;
 use std::convert::TryInto;
+use std::fs;
 use std::fs::File;
 use std::io::{self, BufWriter, Write};
 use std::ops::Deref;
@@ -178,7 +179,9 @@ impl Store {
     }
 
     pub fn save(&self, path: &str) -> Result<usize, io::Error> {
-        let file = File::create(path).unwrap();
+        let tmp_path = format!("{}.tmp" ,path);
+
+        let file = File::create(&tmp_path).unwrap();
         let mut writer = BufWriter::new(file);
         let mut n = 0;
 
@@ -196,6 +199,8 @@ impl Store {
         writer.write_all(&zero.to_ne_bytes()).unwrap();
 
         writer.flush().unwrap();
+
+        fs::rename(tmp_path, path);
 
         Ok(n)
     }
