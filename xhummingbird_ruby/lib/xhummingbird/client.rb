@@ -23,6 +23,8 @@ module Xhummingbird
     end
 
     def start
+      return unless enabled?
+
       ctx = ZMQ::Context.new
       socket = ctx.socket(ZMQ::PUSH)
       socket.connect(address)
