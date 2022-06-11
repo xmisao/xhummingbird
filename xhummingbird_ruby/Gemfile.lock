@@ -1,7 +1,7 @@
 PATH
   remote: .
   specs:
-    xhummingbird (0.1.5)
+    xhummingbird (0.1.6)
       ffi-rzmq
       google-protobuf
 
